@@ -1,4 +1,6 @@
-🌐 **Website:** [execai.ru](https://execai.ru) · 💬 Web chat: [chat.execai.ru](https://chat.execai.ru) · 🤖 Agent: [execai/execai-agent](https://github.com/execai/execai-agent)
+**English** | [Русский](README.ru.md) | [Español](README.es.md) | [Deutsch](README.de.md) | [中文](README.zh.md)
+
+🌐 **Website:** [execai.ru](https://execai.ru) · 💬 Web chat: [chat.execai.ru](https://chat.execai.ru) · 🤖 Agent: [execai/execai-agent](https://github.com/execai/execai-agent) · 🔌 Extension: [execai/execai-vscode](https://github.com/execai/execai-vscode)
 
 ---
 
