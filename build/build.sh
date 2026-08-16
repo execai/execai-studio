@@ -151,6 +151,7 @@ jq --arg v "$STUDIO_VERSION" '
   | .win32ShellNameShort = "ExecAI Studio"
   | .darwinBundleIdentifier = "com.execai.studio"
   | .studioVersion = $v
+  | .licenseUrl = "https://github.com/execai/execai-studio/blob/main/LICENSE"
   | del(.updateUrl)
   | .configurationDefaults = (.configurationDefaults // {}) + {
       "workbench.secondarySideBar.defaultVisibility": "visible",
@@ -158,6 +159,32 @@ jq --arg v "$STUDIO_VERSION" '
     }
 ' "$PRODUCT" > "$PRODUCT.tmp"
 mv "$PRODUCT.tmp" "$PRODUCT"
+
+# --- 3b. License layering ---------------------------------------------------
+# The bundle is an aggregate: ExecAI parts under BUSL-1.1, the VS Code core
+# under MIT. Their notices (LICENSE.txt, ThirdPartyNotices.txt) stay untouched
+# — MIT demands it; ours goes in a separate file next to them.
+{
+  cat <<'NOTICE'
+ExecAI Studio — license layout
+==============================
+
+This distribution is an aggregate of separately licensed works:
+
+* The ExecAI components — the bundled ExecAI extension, the bundled `execai`
+  agent binary, the ExecAI branding and the build scripts that produced this
+  distribution — are licensed under the Business Source License 1.1, see below.
+* The Visual Studio Code sources this build is based on are MIT
+  (c) Microsoft Corporation — see LICENSE.txt in this directory.
+* Other bundled third-party components are listed in ThirdPartyNotices.txt.
+
+ExecAI Studio is not affiliated with Microsoft or VSCodium.
+
+--------------------------------------------------------------------------
+
+NOTICE
+  cat "$ROOT/LICENSE"
+} > "$APP/LICENSE-EXECAI.txt"
 
 # --- 4. Brand assets and launcher names -------------------------------------
 # The ExecAI logo goes everywhere VSCodium's mark appears. One source of truth
@@ -272,6 +299,9 @@ chmod +x "$RES_PARENT/execai/$AGENT_NAME"
 # --- 7. Sanity + package ----------------------------------------------------
 jq -e '.nameShort == "ExecAI Studio" and (.updateUrl | not)' "$PRODUCT" >/dev/null
 [[ -f "$EXT_DIR/package.json" ]]
+# The MIT notices must survive the repack, ours must be present.
+[[ -f "$APP/LICENSE.txt" && -f "$APP/ThirdPartyNotices.txt" && -f "$APP/LICENSE-EXECAI.txt" ]] \
+  || { echo "license layering broken: LICENSE.txt / ThirdPartyNotices.txt / LICENSE-EXECAI.txt must all exist" >&2; exit 1; }
 
 case "$PACK" in
   tar)
