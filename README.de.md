@@ -21,13 +21,19 @@ Kein Cursor-Klon — eine Umgebung, in der der Agent lebt:
 Ein Befehl, keine Adminrechte:
 
 ```sh
-# Linux / macOS
+# Linux / macOS — Yandex-Spiegel
 curl -fsSL https://storage.yandexcloud.net/execai-agent-prod/execai-studio/stable/install.sh | bash
+
+# Linux / macOS — GitHub
+curl -fsSL https://raw.githubusercontent.com/execai/execai-studio/main/install.sh | bash
 ```
 
 ```powershell
-# Windows (PowerShell)
+# Windows (PowerShell) — Yandex-Spiegel
 irm https://storage.yandexcloud.net/execai-agent-prod/execai-studio/stable/install.ps1 | iex
+
+# Windows (PowerShell) — GitHub
+irm https://raw.githubusercontent.com/execai/execai-studio/main/install.ps1 | iex
 ```
 
 Das Skript wählt den Build für dein System (Linux x64, Windows x64, macOS Intel/Apple Silicon), lädt ihn vom Spiegel oder von GitHub, prüft die Checksumme und legt einen Menüeintrag an. Manueller Download: [Releases](https://github.com/execai/execai-studio/releases/latest). Die Windows- und macOS-Builds sind noch nicht signiert — die Install-Skripte kümmern sich darum (Ad-hoc-Signatur auf macOS; unter Windows kommt nichts mit dem Mark-of-the-Web an, also keine SmartScreen-Wand).

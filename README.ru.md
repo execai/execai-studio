@@ -21,13 +21,19 @@
 Одна команда, без прав администратора:
 
 ```sh
-# Linux / macOS
+# Linux / macOS — зеркало на Яндексе
 curl -fsSL https://storage.yandexcloud.net/execai-agent-prod/execai-studio/stable/install.sh | bash
+
+# Linux / macOS — GitHub
+curl -fsSL https://raw.githubusercontent.com/execai/execai-studio/main/install.sh | bash
 ```
 
 ```powershell
-# Windows (PowerShell)
+# Windows (PowerShell) — зеркало на Яндексе
 irm https://storage.yandexcloud.net/execai-agent-prod/execai-studio/stable/install.ps1 | iex
+
+# Windows (PowerShell) — GitHub
+irm https://raw.githubusercontent.com/execai/execai-studio/main/install.ps1 | iex
 ```
 
 Скрипт сам выбирает сборку под твою ОС (Linux x64, Windows x64, macOS Intel/Apple Silicon), качает с зеркала или GitHub, сверяет чексумму и добавляет ярлык в меню. Скачать руками: [Releases](https://github.com/execai/execai-studio/releases/latest). Сборки под Windows и macOS пока без подписи — install-скрипты это учитывают (ad-hoc-подпись на macOS; на Windows файлы приходят без mark-of-the-web, так что SmartScreen не встаёт стеной).

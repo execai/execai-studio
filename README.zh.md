@@ -21,13 +21,19 @@
 一条命令，无需管理员权限：
 
 ```sh
-# Linux / macOS
+# Linux / macOS — Yandex 镜像
 curl -fsSL https://storage.yandexcloud.net/execai-agent-prod/execai-studio/stable/install.sh | bash
+
+# Linux / macOS — GitHub
+curl -fsSL https://raw.githubusercontent.com/execai/execai-studio/main/install.sh | bash
 ```
 
 ```powershell
-# Windows (PowerShell)
+# Windows (PowerShell) — Yandex 镜像
 irm https://storage.yandexcloud.net/execai-agent-prod/execai-studio/stable/install.ps1 | iex
+
+# Windows (PowerShell) — GitHub
+irm https://raw.githubusercontent.com/execai/execai-studio/main/install.ps1 | iex
 ```
 
 脚本会自动选择适合你系统的构建（Linux x64、Windows x64、macOS Intel/Apple Silicon），从镜像或 GitHub 下载，校验哈希并创建菜单项。手动下载：[Releases](https://github.com/execai/execai-studio/releases/latest)。Windows 和 macOS 构建暂未签名 — 安装脚本已妥善处理（macOS 上做 ad-hoc 签名；Windows 上文件不带 mark-of-the-web，因此不会被 SmartScreen 拦截）。

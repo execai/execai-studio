@@ -21,13 +21,19 @@ No es un clon de Cursor — es el entorno donde vive el agente:
 Un solo comando, sin derechos de administrador:
 
 ```sh
-# Linux / macOS
+# Linux / macOS — espejo de Yandex
 curl -fsSL https://storage.yandexcloud.net/execai-agent-prod/execai-studio/stable/install.sh | bash
+
+# Linux / macOS — GitHub
+curl -fsSL https://raw.githubusercontent.com/execai/execai-studio/main/install.sh | bash
 ```
 
 ```powershell
-# Windows (PowerShell)
+# Windows (PowerShell) — espejo de Yandex
 irm https://storage.yandexcloud.net/execai-agent-prod/execai-studio/stable/install.ps1 | iex
+
+# Windows (PowerShell) — GitHub
+irm https://raw.githubusercontent.com/execai/execai-studio/main/install.ps1 | iex
 ```
 
 El script elige la compilación para tu sistema (Linux x64, Windows x64, macOS Intel/Apple Silicon), la descarga del espejo o de GitHub, verifica la suma de comprobación y crea la entrada en el menú. Descarga manual: [Releases](https://github.com/execai/execai-studio/releases/latest). Las compilaciones de Windows y macOS aún no están firmadas — los scripts de instalación lo resuelven (firma ad hoc en macOS; en Windows nada llega con el mark-of-the-web, así que SmartScreen no se interpone).

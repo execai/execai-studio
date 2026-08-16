@@ -21,13 +21,19 @@ Not a Cursor clone — an environment the agent lives in:
 One command, no admin rights:
 
 ```sh
-# Linux / macOS
+# Linux / macOS — Yandex mirror
 curl -fsSL https://storage.yandexcloud.net/execai-agent-prod/execai-studio/stable/install.sh | bash
+
+# Linux / macOS — GitHub
+curl -fsSL https://raw.githubusercontent.com/execai/execai-studio/main/install.sh | bash
 ```
 
 ```powershell
-# Windows (PowerShell)
+# Windows (PowerShell) — Yandex mirror
 irm https://storage.yandexcloud.net/execai-agent-prod/execai-studio/stable/install.ps1 | iex
+
+# Windows (PowerShell) — GitHub
+irm https://raw.githubusercontent.com/execai/execai-studio/main/install.ps1 | iex
 ```
 
 The script picks the build for your OS (Linux x64, Windows x64, macOS Intel/Apple Silicon), downloads it from the mirror or GitHub, verifies the checksum and adds a menu entry. Manual downloads: [Releases](https://github.com/execai/execai-studio/releases/latest). The Windows and macOS builds are not code-signed yet — the install scripts handle that (ad-hoc signing on macOS; on Windows nothing arrives with the mark-of-the-web, so there is no SmartScreen wall).
