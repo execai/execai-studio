@@ -16,16 +16,23 @@ No es un clon de Cursor — es el entorno donde vive el agente:
 - **Niveles de seguridad y permisos por acción** — el agente pregunta antes de tocar lo que no debe.
 - **Open VSX** como galería de extensiones. Sin servicios de Microsoft ni telemetría más allá de los valores de VSCodium.
 
-## Instalación (Linux x64)
+## Instalación
 
-Descarga el tarball desde [Releases](https://github.com/execai/execai-studio/releases/latest) o desde el espejo ([storage.yandexcloud.net/…/latest.json](https://storage.yandexcloud.net/execai-agent-prod/execai-studio/stable/latest.json) apunta a la compilación actual), y luego:
+Un solo comando, sin derechos de administrador:
 
 ```sh
-tar -xzf ExecAI-Studio-linux-x64-*.tar.gz
-./ExecAI-Studio-linux-x64/bin/execai-studio
+# Linux / macOS
+curl -fsSL https://storage.yandexcloud.net/execai-agent-prod/execai-studio/stable/install.sh | bash
 ```
 
-Actualizaciones: el editor consulta el espejo y GitHub Releases por sí mismo y ofrece la descarga cuando hay una versión nueva. Las compilaciones para Windows y macOS están en la hoja de ruta.
+```powershell
+# Windows (PowerShell)
+irm https://storage.yandexcloud.net/execai-agent-prod/execai-studio/stable/install.ps1 | iex
+```
+
+El script elige la compilación para tu sistema (Linux x64, Windows x64, macOS Intel/Apple Silicon), la descarga del espejo o de GitHub, verifica la suma de comprobación y crea la entrada en el menú. Descarga manual: [Releases](https://github.com/execai/execai-studio/releases/latest). Las compilaciones de Windows y macOS aún no están firmadas — los scripts de instalación lo resuelven (firma ad hoc en macOS; en Windows nada llega con el mark-of-the-web, así que SmartScreen no se interpone).
+
+Actualizaciones: el editor consulta el espejo y GitHub Releases por sí mismo y ofrece la descarga cuando hay una versión nueva.
 
 ## Compilar desde el código fuente
 

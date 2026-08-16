@@ -16,16 +16,23 @@ Kein Cursor-Klon — eine Umgebung, in der der Agent lebt:
 - **Sicherheitsstufen und Berechtigungen pro Aktion** — der Agent fragt, bevor er anfasst, was er nicht anfassen sollte.
 - **Open VSX** als Erweiterungskatalog. Keine Microsoft-Dienste, keine Telemetrie über die VSCodium-Defaults hinaus.
 
-## Installation (Linux x64)
+## Installation
 
-Lade den Tarball von [Releases](https://github.com/execai/execai-studio/releases/latest) oder vom Spiegel ([storage.yandexcloud.net/…/latest.json](https://storage.yandexcloud.net/execai-agent-prod/execai-studio/stable/latest.json) zeigt auf den aktuellen Build), dann:
+Ein Befehl, keine Adminrechte:
 
 ```sh
-tar -xzf ExecAI-Studio-linux-x64-*.tar.gz
-./ExecAI-Studio-linux-x64/bin/execai-studio
+# Linux / macOS
+curl -fsSL https://storage.yandexcloud.net/execai-agent-prod/execai-studio/stable/install.sh | bash
 ```
 
-Updates: Der Editor prüft Spiegel und GitHub Releases selbst und bietet den Download an, sobald eine neue Version erschienen ist. Builds für Windows und macOS stehen auf der Roadmap.
+```powershell
+# Windows (PowerShell)
+irm https://storage.yandexcloud.net/execai-agent-prod/execai-studio/stable/install.ps1 | iex
+```
+
+Das Skript wählt den Build für dein System (Linux x64, Windows x64, macOS Intel/Apple Silicon), lädt ihn vom Spiegel oder von GitHub, prüft die Checksumme und legt einen Menüeintrag an. Manueller Download: [Releases](https://github.com/execai/execai-studio/releases/latest). Die Windows- und macOS-Builds sind noch nicht signiert — die Install-Skripte kümmern sich darum (Ad-hoc-Signatur auf macOS; unter Windows kommt nichts mit dem Mark-of-the-Web an, also keine SmartScreen-Wand).
+
+Updates: Der Editor prüft Spiegel und GitHub Releases selbst und bietet den Download an, sobald eine neue Version erschienen ist.
 
 ## Aus dem Quellcode bauen
 

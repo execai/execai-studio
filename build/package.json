@@ -1,0 +1,8 @@
+{
+  "name": "execai-studio-build",
+  "private": true,
+  "description": "Tooling the build scripts need: resedit rebrands the Windows exe without a Windows machine.",
+  "dependencies": {
+    "resedit": "^2.0.0"
+  }
+}

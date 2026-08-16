@@ -16,16 +16,23 @@ Not a Cursor clone — an environment the agent lives in:
 - **Security levels and per-action permissions** — the agent asks before it touches things it shouldn't.
 - **Open VSX** as the extension gallery. No Microsoft services, no telemetry beyond VSCodium defaults.
 
-## Install (Linux x64)
+## Install
 
-Download the tarball from [Releases](https://github.com/execai/execai-studio/releases/latest) or the mirror ([storage.yandexcloud.net/…/latest.json](https://storage.yandexcloud.net/execai-agent-prod/execai-studio/stable/latest.json) points at the current build), then:
+One command, no admin rights:
 
 ```sh
-tar -xzf ExecAI-Studio-linux-x64-*.tar.gz
-./ExecAI-Studio-linux-x64/bin/execai-studio
+# Linux / macOS
+curl -fsSL https://storage.yandexcloud.net/execai-agent-prod/execai-studio/stable/install.sh | bash
 ```
 
-Updates: the editor checks the mirror and GitHub Releases itself and offers a download when a new version is out. Windows and macOS builds are on the roadmap.
+```powershell
+# Windows (PowerShell)
+irm https://storage.yandexcloud.net/execai-agent-prod/execai-studio/stable/install.ps1 | iex
+```
+
+The script picks the build for your OS (Linux x64, Windows x64, macOS Intel/Apple Silicon), downloads it from the mirror or GitHub, verifies the checksum and adds a menu entry. Manual downloads: [Releases](https://github.com/execai/execai-studio/releases/latest). The Windows and macOS builds are not code-signed yet — the install scripts handle that (ad-hoc signing on macOS; on Windows nothing arrives with the mark-of-the-web, so there is no SmartScreen wall).
+
+Updates: the editor checks the mirror and GitHub Releases itself and offers a download when a new version is out.
 
 ## Build from source
 

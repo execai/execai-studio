@@ -16,16 +16,23 @@
 - **安全级别与逐操作授权** — 智能体在触碰不该碰的东西之前会先询问。
 - **Open VSX** 作为扩展市场。没有 Microsoft 服务，除 VSCodium 默认设置外没有额外遥测。
 
-## 安装（Linux x64）
+## 安装
 
-从 [Releases](https://github.com/execai/execai-studio/releases/latest) 或镜像下载压缩包（[storage.yandexcloud.net/…/latest.json](https://storage.yandexcloud.net/execai-agent-prod/execai-studio/stable/latest.json) 指向当前构建），然后：
+一条命令，无需管理员权限：
 
 ```sh
-tar -xzf ExecAI-Studio-linux-x64-*.tar.gz
-./ExecAI-Studio-linux-x64/bin/execai-studio
+# Linux / macOS
+curl -fsSL https://storage.yandexcloud.net/execai-agent-prod/execai-studio/stable/install.sh | bash
 ```
 
-更新：编辑器会自行检查镜像和 GitHub Releases，有新版本时提示下载。Windows 和 macOS 构建已在路线图中。
+```powershell
+# Windows (PowerShell)
+irm https://storage.yandexcloud.net/execai-agent-prod/execai-studio/stable/install.ps1 | iex
+```
+
+脚本会自动选择适合你系统的构建（Linux x64、Windows x64、macOS Intel/Apple Silicon），从镜像或 GitHub 下载，校验哈希并创建菜单项。手动下载：[Releases](https://github.com/execai/execai-studio/releases/latest)。Windows 和 macOS 构建暂未签名 — 安装脚本已妥善处理（macOS 上做 ad-hoc 签名；Windows 上文件不带 mark-of-the-web，因此不会被 SmartScreen 拦截）。
+
+更新：编辑器会自行检查镜像和 GitHub Releases，有新版本时提示下载。
 
 ## 从源码构建
 

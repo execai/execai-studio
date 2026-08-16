@@ -16,16 +16,23 @@
 - **Уровни безопасности и разрешения на действия** — агент спрашивает, прежде чем трогать то, что трогать не следует.
 - **Open VSX** как каталог расширений. Без сервисов Microsoft и без телеметрии сверх умолчаний VSCodium.
 
-## Установка (Linux x64)
+## Установка
 
-Скачай тарболл из [Releases](https://github.com/execai/execai-studio/releases/latest) или с зеркала ([storage.yandexcloud.net/…/latest.json](https://storage.yandexcloud.net/execai-agent-prod/execai-studio/stable/latest.json) указывает на текущую сборку), затем:
+Одна команда, без прав администратора:
 
 ```sh
-tar -xzf ExecAI-Studio-linux-x64-*.tar.gz
-./ExecAI-Studio-linux-x64/bin/execai-studio
+# Linux / macOS
+curl -fsSL https://storage.yandexcloud.net/execai-agent-prod/execai-studio/stable/install.sh | bash
 ```
 
-Обновления: редактор сам проверяет зеркало и GitHub Releases и предлагает скачать новую версию. Сборки под Windows и macOS — в планах.
+```powershell
+# Windows (PowerShell)
+irm https://storage.yandexcloud.net/execai-agent-prod/execai-studio/stable/install.ps1 | iex
+```
+
+Скрипт сам выбирает сборку под твою ОС (Linux x64, Windows x64, macOS Intel/Apple Silicon), качает с зеркала или GitHub, сверяет чексумму и добавляет ярлык в меню. Скачать руками: [Releases](https://github.com/execai/execai-studio/releases/latest). Сборки под Windows и macOS пока без подписи — install-скрипты это учитывают (ad-hoc-подпись на macOS; на Windows файлы приходят без mark-of-the-web, так что SmartScreen не встаёт стеной).
+
+Обновления: редактор сам проверяет зеркало и GitHub Releases и предлагает скачать новую версию.
 
 ## Сборка из исходников
 
