@@ -107,9 +107,14 @@ for a in "${ARTIFACTS[@]}"; do
   for sub in ${FEED[$plat]}; do
     dir="update/stable/$sub"
     mkdir -p "$dir"
-    jq -n --arg url "$PUBLIC_BASE/$a" --arg v "$VERSION" --arg pv "$PRODUCT_VERSION" \
-          --arg ts "$NOW_MS" --arg sha "$sum" \
-      '{ url: $url, name: $v, version: $pv, productVersion: $pv, timestamp: ($ts|tonumber), sha256hash: $sha }' \
+    # `url` is what the core updater OPENS when the user clicks «Download»
+    # (Linux/Windows-archive). It is our own URI, so the click lands in the
+    # ExecAI extension, which downloads, verifies and installs in place —
+    # no browser, no manual unpacking. The real archive URL rides along in
+    # `archive` for anyone reading the feed by hand.
+    jq -n --arg url "execai-studio://execai.execai/update" --arg archive "$PUBLIC_BASE/$a" \
+          --arg v "$VERSION" --arg pv "$PRODUCT_VERSION" --arg ts "$NOW_MS" --arg sha "$sum" \
+      '{ url: $url, archive: $archive, name: $v, version: $pv, productVersion: $pv, timestamp: ($ts|tonumber), sha256hash: $sha }' \
       > "$dir/latest.json"
   done
 done
