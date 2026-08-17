@@ -194,38 +194,28 @@ NOTICE
 } > "$APP/LICENSE-EXECAI.txt"
 
 # --- 3c. Re-enable the updater ---------------------------------------------
-# VSCodium ships a patch that flips the default of `update.mode` to "none"
-# (their Linux builds have no update server), which parks the updater in
-# Disabled and hides «Check for Updates» from the Help menu. product.json
-# configurationDefaults cannot reach it: the main process reads the schema
-# default directly. So the one literal is flipped back to VS Code's own
-# "default" in both bundles. This is a string edit on a release artifact,
-# same as the icons — not a source patch — and it is fenced: an upstream
-# change that moves the literal fails the build instead of passing silently.
-UPD_FIXED=0
+# VSCodium's Linux builds ship a patch that flips the default of `update.mode`
+# to "none" (they have no update server), which parks the updater in Disabled
+# and hides «Check for Updates» from the Help menu; Windows/macOS builds keep
+# VS Code's "default". And VS Code itself holds any update back until it is
+# 120 hours old — fine for Microsoft's cadence, a five-day blackout for ours.
+# Both are schema defaults the main process reads directly, so product.json
+# configurationDefaults cannot override them. So the two literals are set to
+# the wanted values in both bundles. This is a string edit on a release
+# artifact, same as the icons — not a source patch — and it is fenced: after
+# the edit each bundle must contain the wanted literal exactly once, otherwise
+# upstream moved it and the build fails instead of passing silently.
 for f in "$APP/out/main.js" "$APP/out/vs/workbench/workbench.desktop.main.js"; do
-  [[ -f "$f" ]] || continue
-  n="$(grep -o '"update.mode":{type:"string",enum:\["none","manual","start","default"\],default:"none"' "$f" | wc -l)"
-  if [[ "$n" -eq 1 ]]; then
-    sed -i 's/"update.mode":{type:"string",enum:\["none","manual","start","default"\],default:"none"/"update.mode":{type:"string",enum:["none","manual","start","default"],default:"default"/' "$f"
-    UPD_FIXED=$((UPD_FIXED+1))
-  fi
+  [[ -f "$f" ]] || { echo "bundle not found: $f" >&2; exit 1; }
+  sed -i \
+    -e 's/"update.mode":{type:"string",enum:\["none","manual","start","default"\],default:"none"/"update.mode":{type:"string",enum:["none","manual","start","default"],default:"default"/' \
+    -e 's/"update.minReleaseAge":{type:"integer",default:120/"update.minReleaseAge":{type:"integer",default:0/' \
+    "$f"
+  n_mode="$(grep -o '"update.mode":{type:"string",enum:\["none","manual","start","default"\],default:"default"' "$f" | wc -l)"
+  n_age="$(grep -o '"update.minReleaseAge":{type:"integer",default:0' "$f" | wc -l)"
+  [[ "$n_mode" -eq 1 && "$n_age" -eq 1 ]] \
+    || { echo "updater defaults not found exactly once in $(basename "$f") (mode=$n_mode age=$n_age) — upstream changed, revisit step 3c" >&2; exit 1; }
 done
-[[ "$UPD_FIXED" -eq 2 ]] || { echo "update.mode default literal not found exactly once in both bundles (found in $UPD_FIXED) — upstream changed, revisit step 3c" >&2; exit 1; }
-# Same treatment for update.minReleaseAge: VS Code holds updates back until a
-# release is 120 hours old — fine for Microsoft's cadence, a five-day blackout
-# for ours. Both settings are schema defaults the main process reads directly,
-# so product.json configurationDefaults cannot override them either.
-AGE_FIXED=0
-for f in "$APP/out/main.js" "$APP/out/vs/workbench/workbench.desktop.main.js"; do
-  [[ -f "$f" ]] || continue
-  n="$(grep -o '"update.minReleaseAge":{type:"integer",default:120' "$f" | wc -l)"
-  if [[ "$n" -eq 1 ]]; then
-    sed -i 's/"update.minReleaseAge":{type:"integer",default:120/"update.minReleaseAge":{type:"integer",default:0/' "$f"
-    AGE_FIXED=$((AGE_FIXED+1))
-  fi
-done
-[[ "$AGE_FIXED" -eq 2 ]] || { echo "update.minReleaseAge default literal not found exactly once in both bundles (found in $AGE_FIXED) — upstream changed, revisit step 3c" >&2; exit 1; }
 
 # --- 4. Brand assets and launcher names -------------------------------------
 # The ExecAI logo goes everywhere VSCodium's mark appears. One source of truth
