@@ -137,9 +137,10 @@ echo "==> version gate: agent $AGENT_VERSION >= MIN_CLI $MIN_CLI"
 # to turn Studio back into vanilla VSCodium. The version gets the Studio
 # release as semver build metadata (1.126.04524+0.1.5): a new Studio on the
 # same VSCodium base still compares as newer (semver.compareBuild). Nothing is
-# downloaded silently — on Linux the updater only opens the link, and
-# downloadUrl forces the same on Windows/macOS, where the unsigned exe/.app
-# could not self-install anyway. The Open VSX gallery from VSCodium is kept.
+# downloaded silently by the core updater — its «Download Update» opens
+# downloadUrl, and that is our own URI (execai-studio://execai.execai/update),
+# which the editor routes to the ExecAI extension's UriHandler; the extension
+# then downloads, verifies and installs the update itself. The Open VSX gallery from VSCodium is kept.
 jq --arg v "$STUDIO_VERSION" '
   .nameShort = "ExecAI Studio"
   | .nameLong = "ExecAI Studio"
@@ -158,7 +159,7 @@ jq --arg v "$STUDIO_VERSION" '
   | .studioVersion = $v
   | .licenseUrl = "https://github.com/execai/execai-studio/blob/main/LICENSE"
   | .updateUrl = "https://storage.yandexcloud.net/execai-agent-prod/execai-studio/update"
-  | .downloadUrl = "https://github.com/execai/execai-studio/releases/latest"
+  | .downloadUrl = "execai-studio://execai.execai/update"
   | .version = (.version + "+" + $v)
   | .configurationDefaults = (.configurationDefaults // {}) + {
       "workbench.secondarySideBar.defaultVisibility": "visible",

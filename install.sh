@@ -88,7 +88,12 @@ Icon=$DEST/resources/app/resources/linux/code.png
 Type=Application
 Categories=Development;IDE;
 StartupWMClass=execai-studio
+MimeType=x-scheme-handler/execai-studio;
 DESK
+  # The execai-studio:// scheme is how the editor's own «Download Update»
+  # hands control back to the ExecAI extension; register it with the desktop.
+  command -v update-desktop-database >/dev/null && update-desktop-database "$HOME/.local/share/applications" 2>/dev/null || true
+  command -v xdg-mime >/dev/null && xdg-mime default execai-studio.desktop x-scheme-handler/execai-studio 2>/dev/null || true
   echo "==> installed: $DEST"
   echo "    run: execai-studio (make sure ~/.local/bin is on PATH) or find it in the app menu"
 fi
