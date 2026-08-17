@@ -86,10 +86,37 @@ sha256sum "${ARTIFACTS[@]}" > SHA256SUMS
 } > latest.json
 jq -e .version latest.json >/dev/null # syntax check
 
+# Feed for VS Code's own updater (Help → Check for Updates):
+# {updateUrl}/{quality}/{platform}/{arch}/latest.json with
+# {url, version, productVersion, timestamp}. productVersion must be the exact
+# string stamped into product.json.version (base VSCodium + "+" + Studio):
+# the updater compares them with semver.compareBuild. `url` is what the
+# updater opens on Linux; Windows/macOS open product.json.downloadUrl instead.
+CODIUM_VERSION="$(sed -n 's/^VSCODIUM_VERSION="\${VSCODIUM_VERSION:-\(.*\)}"$/\1/p' "$ROOT/build/build.sh")"
+[[ -n "$CODIUM_VERSION" ]] || { echo "could not read VSCODIUM_VERSION from build.sh" >&2; exit 1; }
+PRODUCT_VERSION="${CODIUM_VERSION}+${VERSION}"
+NOW_MS="$(date +%s)000"
+mkdir -p update
+declare -A FEED=( [linux-x64]="linux/x64" [win32-x64]="win32/x64" [darwin-x64]="darwin/x64" [darwin-arm64]="darwin/arm64" )
+for a in "${ARTIFACTS[@]}"; do
+  plat="${a#ExecAI-Studio-}"; plat="${plat%-${VERSION}.*}"
+  dir="update/stable/${FEED[$plat]}"
+  mkdir -p "$dir"
+  sum="$(grep " $a\$" SHA256SUMS | cut -d' ' -f1)"
+  jq -n --arg url "$PUBLIC_BASE/$a" --arg v "$VERSION" --arg pv "$PRODUCT_VERSION" \
+        --arg ts "$NOW_MS" --arg sha "$sum" \
+    '{ url: $url, name: $v, version: $pv, productVersion: $pv, timestamp: ($ts|tonumber), sha256hash: $sha }' \
+    > "$dir/latest.json"
+done
+
 echo "==> uploading to ${BUCKET}"
 for f in "${ARTIFACTS[@]}" SHA256SUMS latest.json; do
   aws --endpoint-url=https://storage.yandexcloud.net s3 cp --no-progress "$f" "$BUCKET/$f"
 done
+# The updater feed lives one level up from stable/ (…/execai-studio/update/…).
+aws --endpoint-url=https://storage.yandexcloud.net s3 cp --no-progress --recursive \
+  --content-type application/json --cache-control "max-age=300" \
+  update/ "${BUCKET%/stable}/update/"
 for s in install.sh install.ps1; do
   aws --endpoint-url=https://storage.yandexcloud.net s3 cp --no-progress "$ROOT/$s" "$BUCKET/$s"
 done
