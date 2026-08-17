@@ -327,6 +327,24 @@ mkdir -p "$RES_PARENT/execai"
 cp "$EXECAI_BIN" "$RES_PARENT/execai/$AGENT_NAME"
 chmod +x "$RES_PARENT/execai/$AGENT_NAME"
 
+# --- 6b. Refresh integrity checksums ----------------------------------------
+# product.json carries SHA-256 of the core bundles; VS Code verifies them at
+# startup and shows «installation appears to be corrupt» on a mismatch. Step 3c
+# edits workbench.desktop.main.js, so the recorded sums are recomputed the way
+# VS Code's own build does it (base64 of the raw digest, '=' padding dropped).
+if jq -e '.checksums' "$PRODUCT" >/dev/null; then
+  TMP_SUMS="$(mktemp)"
+  echo '{}' > "$TMP_SUMS"
+  while IFS= read -r rel; do
+    file="$APP/out/$rel"
+    [[ -f "$file" ]] || { echo "checksummed file missing: $rel" >&2; exit 1; }
+    sum="$(openssl dgst -sha256 -binary "$file" | base64 | tr -d '=')"
+    jq --arg k "$rel" --arg v "$sum" '. + {($k): $v}' "$TMP_SUMS" > "$TMP_SUMS.new" && mv "$TMP_SUMS.new" "$TMP_SUMS"
+  done < <(jq -r '.checksums | keys[]' "$PRODUCT")
+  jq --slurpfile sums "$TMP_SUMS" '.checksums = $sums[0]' "$PRODUCT" > "$PRODUCT.tmp" && mv "$PRODUCT.tmp" "$PRODUCT"
+  rm -f "$TMP_SUMS"
+fi
+
 # --- 7. Sanity + package ----------------------------------------------------
 jq -e '.nameShort == "ExecAI Studio" and (.updateUrl | test("execai-studio/update$")) and (.version | test("\\+"))' "$PRODUCT" >/dev/null
 [[ -f "$EXT_DIR/package.json" ]]
