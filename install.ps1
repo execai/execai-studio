@@ -62,5 +62,26 @@ $lnk.TargetPath = $exe
 $lnk.WorkingDirectory = $dest
 $lnk.Save()
 
+# «Open with ExecAI Studio» in the Explorer context menu — for folders, the
+# folder background and files. HKCU only, so no admin rights and no clash
+# with a machine-wide install; the editor re-checks these keys on every start.
+$icon = "`"$exe`""
+$menu = 'Open with ExecAI Studio'
+foreach ($key in @('Software\Classes\Directory\shell\ExecAIStudio',
+                   'Software\Classes\Directory\Background\shell\ExecAIStudio',
+                   'Software\Classes\*\shell\ExecAIStudio')) {
+  $k = "HKCU:\$key"
+  New-Item -Path "$k\command" -Force | Out-Null
+  Set-ItemProperty -Path $k -Name '(default)' -Value $menu
+  Set-ItemProperty -Path $k -Name 'Icon' -Value $icon
+  $arg = if ($key -like '*Background*') { '"%V"' } else { '"%1"' }
+  Set-ItemProperty -Path "$k\command" -Name '(default)' -Value "`"$exe`" $arg"
+}
+# App Paths: lets «Run» and the shell find execai-studio by name.
+$appPaths = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\App Paths\execai-studio.exe'
+New-Item -Path $appPaths -Force | Out-Null
+Set-ItemProperty -Path $appPaths -Name '(default)' -Value $exe
+Set-ItemProperty -Path $appPaths -Name 'Path' -Value $dest
+
 Write-Host "==> installed: $dest"
-Write-Host '    find "ExecAI Studio" in the Start Menu'
+Write-Host '    find "ExecAI Studio" in the Start Menu, or right-click a folder → Open with ExecAI Studio'
