@@ -2,7 +2,7 @@
 # publish-release.sh — builds ExecAI Studio for every platform and publishes
 # to both update channels.
 #
-# Channels, in the order the editor checks them:
+# Channels (the editor and the install scripts try GitHub first, then the mirror):
 #   1. Yandex S3 (our production bucket, always reachable in Russia):
 #      s3://execai-agent-prod/execai-studio/stable/ — artifacts, SHA256SUMS,
 #      latest.json (with per-platform urls) and the install scripts;
@@ -97,16 +97,21 @@ CODIUM_VERSION="$(sed -n 's/^VSCODIUM_VERSION="\${VSCODIUM_VERSION:-\(.*\)}"$/\1
 PRODUCT_VERSION="${CODIUM_VERSION}+${VERSION}"
 NOW_MS="$(date +%s)000"
 mkdir -p update
-declare -A FEED=( [linux-x64]="linux/x64" [win32-x64]="win32/x64" [darwin-x64]="darwin/x64" [darwin-arm64]="darwin/arm64" )
+# On Windows the core updater appends its setup kind to the path
+# (…/win32/x64/{archive|user|system}/latest.json), so the feed goes into all
+# three; Linux/macOS read …/{platform}/{arch}/latest.json directly.
+declare -A FEED=( [linux-x64]="linux/x64" [win32-x64]="win32/x64/archive win32/x64/user win32/x64/system" [darwin-x64]="darwin/x64" [darwin-arm64]="darwin/arm64" )
 for a in "${ARTIFACTS[@]}"; do
   plat="${a#ExecAI-Studio-}"; plat="${plat%-${VERSION}.*}"
-  dir="update/stable/${FEED[$plat]}"
-  mkdir -p "$dir"
   sum="$(grep " $a\$" SHA256SUMS | cut -d' ' -f1)"
-  jq -n --arg url "$PUBLIC_BASE/$a" --arg v "$VERSION" --arg pv "$PRODUCT_VERSION" \
-        --arg ts "$NOW_MS" --arg sha "$sum" \
-    '{ url: $url, name: $v, version: $pv, productVersion: $pv, timestamp: ($ts|tonumber), sha256hash: $sha }' \
-    > "$dir/latest.json"
+  for sub in ${FEED[$plat]}; do
+    dir="update/stable/$sub"
+    mkdir -p "$dir"
+    jq -n --arg url "$PUBLIC_BASE/$a" --arg v "$VERSION" --arg pv "$PRODUCT_VERSION" \
+          --arg ts "$NOW_MS" --arg sha "$sum" \
+      '{ url: $url, name: $v, version: $pv, productVersion: $pv, timestamp: ($ts|tonumber), sha256hash: $sha }' \
+      > "$dir/latest.json"
+  done
 done
 
 echo "==> uploading to ${BUCKET}"

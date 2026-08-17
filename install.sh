@@ -6,8 +6,8 @@
 #   curl -fsSL https://raw.githubusercontent.com/execai/execai-studio/main/install.sh | bash
 #
 # What it does, and why a script at all:
-# * picks the artifact for this OS/arch and downloads it, mirror first
-#   (always reachable in Russia), GitHub second;
+# * picks the artifact for this OS/arch and downloads it, GitHub first,
+#   the Yandex mirror (always reachable in Russia) second;
 # * macOS: the bundle ships unsigned (no Apple developer account yet), so the
 #   script ad-hoc signs it locally — and because curl never sets the
 #   quarantine attribute, Gatekeeper has nothing to complain about;
@@ -28,12 +28,12 @@ case "$os/$arch" in
   *) echo "unsupported platform: $os/$arch" >&2; exit 1 ;;
 esac
 
-# Version: latest.json on the mirror, or the GitHub release redirect.
-VERSION="$(curl -fsSL --max-time 15 "$MIRROR/latest.json" 2>/dev/null \
-  | sed -n 's/.*"version"[^"]*"\([^"]*\)".*/\1/p' | head -1 || true)"
+# Version: the GitHub release redirect first, latest.json on the mirror second.
+VERSION="$(curl -fsSLI --max-time 15 -o /dev/null -w '%{url_effective}' \
+  "https://github.com/$REPO/releases/latest" 2>/dev/null | sed -n 's|.*/v\([0-9][0-9.]*\)$|\1|p' || true)"
 if [[ -z "$VERSION" ]]; then
-  VERSION="$(curl -fsSLI -o /dev/null -w '%{url_effective}' \
-    "https://github.com/$REPO/releases/latest" | sed 's|.*/v||')"
+  VERSION="$(curl -fsSL --max-time 15 "$MIRROR/latest.json" 2>/dev/null \
+    | sed -n 's/.*"version"[^"]*"\([^"]*\)".*/\1/p' | head -1 || true)"
 fi
 [[ -n "$VERSION" ]] || { echo "could not determine the latest version" >&2; exit 1; }
 
@@ -42,14 +42,15 @@ TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
 echo "==> ExecAI Studio ${VERSION} (${PLATFORM})"
-if ! curl -fL --retry 2 -o "$TMP/$FILE" "$MIRROR/$FILE"; then
-  echo "==> mirror failed, trying GitHub"
-  curl -fL --retry 2 -o "$TMP/$FILE" \
-    "https://github.com/$REPO/releases/download/v${VERSION}/${FILE}"
+if ! curl -fL --retry 2 -o "$TMP/$FILE" \
+    "https://github.com/$REPO/releases/download/v${VERSION}/${FILE}"; then
+  echo "==> GitHub failed, trying the mirror"
+  curl -fL --retry 2 -o "$TMP/$FILE" "$MIRROR/$FILE"
 fi
 
-# Checksum when the mirror offers one; a missing SHA256SUMS is not fatal.
-if curl -fsSL --max-time 15 -o "$TMP/SHA256SUMS" "$MIRROR/SHA256SUMS" 2>/dev/null; then
+# Checksum: SHA256SUMS from GitHub, then the mirror; a missing file is not fatal.
+if curl -fsSL --max-time 15 -o "$TMP/SHA256SUMS" "https://github.com/$REPO/releases/download/v${VERSION}/SHA256SUMS" 2>/dev/null \
+   || curl -fsSL --max-time 15 -o "$TMP/SHA256SUMS" "$MIRROR/SHA256SUMS" 2>/dev/null; then
   want="$(grep " $FILE\$" "$TMP/SHA256SUMS" | cut -d' ' -f1 || true)"
   if [[ -n "$want" ]]; then
     got="$(shasum -a 256 "$TMP/$FILE" 2>/dev/null | cut -d' ' -f1 || sha256sum "$TMP/$FILE" | cut -d' ' -f1)"

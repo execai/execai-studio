@@ -4,7 +4,7 @@
 #   # or
 #   irm https://raw.githubusercontent.com/execai/execai-studio/main/install.ps1 | iex
 #
-# Downloads the zip (mirror first, GitHub second), unpacks it into
+# Downloads the zip (GitHub first, the Yandex mirror second), unpacks it into
 # %LOCALAPPDATA%\Programs\ExecAI Studio and creates a Start Menu shortcut.
 # No admin rights: everything stays in the user profile. Expand-Archive does
 # not propagate the mark-of-the-web, so the unsigned exe starts without the
@@ -21,11 +21,11 @@ if ([Environment]::Is64BitOperatingSystem -eq $false) {
   throw 'ExecAI Studio needs 64-bit Windows.'
 }
 
-# Latest version: mirror first, GitHub API second.
+# Latest version: GitHub first, the mirror second.
 $version = $null
-try { $version = (Invoke-RestMethod -TimeoutSec 15 "$Mirror/latest.json").version } catch {}
+try { $version = (Invoke-RestMethod -TimeoutSec 15 "https://api.github.com/repos/$Repo/releases/latest").tag_name -replace '^v', '' } catch {}
 if (-not $version) {
-  $version = (Invoke-RestMethod -TimeoutSec 15 "https://api.github.com/repos/$Repo/releases/latest").tag_name -replace '^v', ''
+  $version = (Invoke-RestMethod -TimeoutSec 15 "$Mirror/latest.json").version
 }
 if (-not $version) { throw 'could not determine the latest version' }
 
@@ -34,10 +34,10 @@ $tmp = Join-Path $env:TEMP "execai-studio-$version.zip"
 Write-Host "==> ExecAI Studio $version ($Platform)"
 
 try {
-  Invoke-WebRequest "$Mirror/$file" -OutFile $tmp
-} catch {
-  Write-Host '==> mirror failed, trying GitHub'
   Invoke-WebRequest "https://github.com/$Repo/releases/download/v$version/$file" -OutFile $tmp
+} catch {
+  Write-Host '==> GitHub failed, trying the mirror'
+  Invoke-WebRequest "$Mirror/$file" -OutFile $tmp
 }
 
 $dest = Join-Path $env:LOCALAPPDATA 'Programs\ExecAI Studio'
