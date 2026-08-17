@@ -42,10 +42,18 @@ TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
 echo "==> ExecAI Studio ${VERSION} (${PLATFORM})"
-if ! curl -fL --retry 2 -o "$TMP/$FILE" \
-    "https://github.com/$REPO/releases/download/v${VERSION}/${FILE}"; then
+
+# Download with a percentage: curl's own bar (-#) is a plain progress line
+# that works in any terminal; when there is no terminal (piped logs) it is
+# dropped to keep the output clean.
+dl() { # url → $TMP/$FILE
+  if [[ -t 2 ]]; then curl -fL --retry 2 -# -o "$TMP/$FILE" "$1"
+  else curl -fL --retry 2 -sS -o "$TMP/$FILE" "$1"; fi
+}
+echo "    downloading $FILE"
+if ! dl "https://github.com/$REPO/releases/download/v${VERSION}/${FILE}"; then
   echo "==> GitHub failed, trying the mirror"
-  curl -fL --retry 2 -o "$TMP/$FILE" "$MIRROR/$FILE"
+  dl "$MIRROR/$FILE"
 fi
 
 # Checksum: SHA256SUMS from GitHub, then the mirror; a missing file is not fatal.
@@ -59,7 +67,20 @@ if curl -fsSL --max-time 15 -o "$TMP/SHA256SUMS" "https://github.com/$REPO/relea
   fi
 fi
 
-tar -xzf "$TMP/$FILE" -C "$TMP"
+# Unpack with a percentage: count entries first, then tick as they land.
+echo "    unpacking"
+TOTAL="$(tar -tzf "$TMP/$FILE" | wc -l)"
+if [[ -t 2 && "$TOTAL" -gt 0 ]]; then
+  n=0
+  tar -xzvf "$TMP/$FILE" -C "$TMP" 2>&1 | while IFS= read -r _; do
+    n=$((n+1))
+    if (( n % 200 == 0 || n == TOTAL )); then printf '\r    unpacking %3d%%' $(( n * 100 / TOTAL )) >&2; fi
+  done
+  printf '\r    unpacking 100%%\n' >&2
+else
+  tar -xzf "$TMP/$FILE" -C "$TMP"
+fi
+rm -f "$TMP/$FILE"
 
 if [[ "$PLATFORM" == darwin-* ]]; then
   DEST="$HOME/Applications/ExecAI Studio.app"
