@@ -1,4 +1,21 @@
-build/node_modules/
-build/cache/
+# Сборка редактора (build/*.sh и *.mjs — исходники, они в репе)
 out/
 dist/
+build/cache/
+build/node_modules/
+node_modules/
+*.vsix
+*.AppImage
+*.deb
+*.dmg
+*.exe
+
+# Исходники VSCodium подтягиваются скриптом, в репозиторий не кладутся:
+# это сотни мегабайт чужого кода, который обновляется каждый месяц.
+vscode/
+vscodium/
+
+# Локальное
+.DS_Store
+*.log
+.selftest/
