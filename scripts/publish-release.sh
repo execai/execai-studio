@@ -137,4 +137,9 @@ gh release create "v${VERSION}" --repo "$REPO" \
   --notes "${NOTES:-ExecAI Studio ${VERSION} — Linux x64, Windows x64, macOS x64/arm64. Mirror: $PUBLIC_BASE/latest.json}" \
   "${ARTIFACTS[@]/#/$ROOT/dist/}" "$ROOT/dist/SHA256SUMS"
 
+# Everything is on S3 and GitHub now; older archives in dist/ are just disk
+# (each release is ~1 GB across four platforms).
+find "$ROOT/dist" -maxdepth 1 -name 'ExecAI-Studio-*' ! -name "*-${VERSION}.*" -delete
+rm -rf "$ROOT/dist/update"
+
 echo "==> done: $PUBLIC_BASE/latest.json and https://github.com/$REPO/releases/tag/v${VERSION}"
