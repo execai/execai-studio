@@ -114,7 +114,7 @@ for a in "${ARTIFACTS[@]}"; do
     # `archive` for anyone reading the feed by hand.
     jq -n --arg url "execai-studio://execai.execai/update" --arg archive "$PUBLIC_BASE/$a" \
           --arg v "$VERSION" --arg pv "$PRODUCT_VERSION" --arg ts "$NOW_MS" --arg sha "$sum" \
-      '{ url: $url, archive: $archive, name: $v, version: $pv, productVersion: $pv, timestamp: ($ts|tonumber), sha256hash: $sha }' \
+      '{ url: $url, archive: $archive, name: ("ExecAI Studio " + $v), version: $pv, productVersion: $pv, timestamp: ($ts|tonumber), sha256hash: $sha }' \
       > "$dir/latest.json"
   done
 done

@@ -158,6 +158,10 @@ jq --arg v "$STUDIO_VERSION" '
   | .darwinBundleIdentifier = "com.execai.studio"
   | .studioVersion = $v
   | .licenseUrl = "https://github.com/execai/execai-studio/blob/main/LICENSE"
+  | .releaseNotesUrl = ("https://github.com/execai/execai-studio/releases/tag/v" + $v)
+  | .reportIssueUrl = "https://github.com/execai/execai-studio/issues/new"
+  | .requestFeatureUrl = "https://github.com/execai/execai-studio/issues/new"
+  | .documentationUrl = "https://github.com/execai/execai-studio#readme"
   | .updateUrl = "https://storage.yandexcloud.net/execai-agent-prod/execai-studio/update"
   | .downloadUrl = "execai-studio://execai.execai/update"
   | .version = (.version + "+" + $v)

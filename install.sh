@@ -28,8 +28,10 @@ case "$os/$arch" in
   *) echo "unsupported platform: $os/$arch" >&2; exit 1 ;;
 esac
 
-# Version: the GitHub release redirect first, latest.json on the mirror second.
-VERSION="$(curl -fsSLI --max-time 15 -o /dev/null -w '%{url_effective}' \
+# Version: EXECAI_STUDIO_VERSION pins one (tests, rollbacks); otherwise the
+# latest — the GitHub release redirect first, latest.json on the mirror second.
+VERSION="${EXECAI_STUDIO_VERSION:-}"
+[[ -n "$VERSION" ]] || VERSION="$(curl -fsSLI --max-time 15 -o /dev/null -w '%{url_effective}' \
   "https://github.com/$REPO/releases/latest" 2>/dev/null | sed -n 's|.*/v\([0-9][0-9.]*\)$|\1|p' || true)"
 if [[ -z "$VERSION" ]]; then
   VERSION="$(curl -fsSL --max-time 15 "$MIRROR/latest.json" 2>/dev/null \

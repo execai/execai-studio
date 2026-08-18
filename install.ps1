@@ -21,9 +21,12 @@ if ([Environment]::Is64BitOperatingSystem -eq $false) {
   throw 'ExecAI Studio needs 64-bit Windows.'
 }
 
-# Latest version: GitHub first, the mirror second.
-$version = $null
-try { $version = (Invoke-RestMethod -TimeoutSec 15 "https://api.github.com/repos/$Repo/releases/latest").tag_name -replace '^v', '' } catch {}
+# Version: $env:EXECAI_STUDIO_VERSION pins one (tests, rollbacks); otherwise the
+# latest — GitHub first, the mirror second.
+$version = $env:EXECAI_STUDIO_VERSION
+if (-not $version) {
+  try { $version = (Invoke-RestMethod -TimeoutSec 15 "https://api.github.com/repos/$Repo/releases/latest").tag_name -replace '^v', '' } catch {}
+}
 if (-not $version) {
   $version = (Invoke-RestMethod -TimeoutSec 15 "$Mirror/latest.json").version
 }
