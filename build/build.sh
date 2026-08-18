@@ -331,6 +331,15 @@ AGENT_NAME="execai"; [[ "$PLATFORM" == win32-* ]] && AGENT_NAME="execai.exe"
 mkdir -p "$RES_PARENT/execai"
 cp "$EXECAI_BIN" "$RES_PARENT/execai/$AGENT_NAME"
 chmod +x "$RES_PARENT/execai/$AGENT_NAME"
+# The self-updater ships next to the agent: the extension only starts it and
+# quits; the script (in its own console/terminal) waits, downloads, verifies,
+# unpacks, swaps and starts the new build.
+if [[ "$PLATFORM" == win32-* ]]; then
+  cp "$ROOT/updater/updater.ps1" "$RES_PARENT/execai/updater.ps1"
+else
+  cp "$ROOT/updater/updater.sh" "$RES_PARENT/execai/updater.sh"
+  chmod +x "$RES_PARENT/execai/updater.sh"
+fi
 
 # --- 6b. Refresh integrity checksums ----------------------------------------
 # product.json carries SHA-256 of the core bundles; VS Code verifies them at
