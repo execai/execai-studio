@@ -269,11 +269,32 @@ try {
   Done
 
   Step 6 "starting ExecAI Studio $Version..."
-  if ($Folder) { Start-Process -FilePath $exe -ArgumentList "`"$Folder`"" -WorkingDirectory $Install }
-  else { Start-Process -FilePath $exe -WorkingDirectory $Install }
+  if (-not (Test-Path $exe)) { throw "the new build has no 'ExecAI Studio.exe' at $Install" }
+  # Start the editor DETACHED from this console: a process started by
+  # Start-Process dies with the console's job when this window closes, and
+  # Electron takes more than a couple of seconds to come up after an update.
+  # cmd's `start` creates an independent process.
+  $startArgs = '/c start "" /D "' + $Install + '" "' + $exe + '"'
+  if ($Folder) { $startArgs += ' "' + $Folder + '"' }
+  Start-Process -FilePath $env:ComSpec -ArgumentList $startArgs -WindowStyle Hidden
+  # Do not leave until the editor is actually alive (or we know it is not).
+  $up = $false; $deadline = (Get-Date).AddSeconds(45)
+  while ((Get-Date) -lt $deadline) {
+    Start-Sleep -Milliseconds 700
+    $alive = Get-Process -Name 'ExecAI Studio' -ErrorAction SilentlyContinue
+    if ($alive) { $up = $true; break }
+  }
+  if (-not $up) {
+    Write-Host ''
+    Write-Host "  ExecAI Studio did not start on its own - starting it once more" -ForegroundColor Yellow
+    Start-Process -FilePath $env:ComSpec -ArgumentList $startArgs -WindowStyle Hidden
+    Start-Sleep -Seconds 8
+    $up = [bool](Get-Process -Name 'ExecAI Studio' -ErrorAction SilentlyContinue)
+  }
+  if (-not $up) { throw "the new ExecAI Studio did not start; run it by hand: $exe" }
   Done
   Remove-Item $staging -Recurse -Force -ErrorAction SilentlyContinue
-  Start-Sleep -Seconds 2
+  Start-Sleep -Seconds 3
 } catch {
   Write-Host ''
   Write-Host "  update failed: $($_.Exception.Message)" -ForegroundColor Red
