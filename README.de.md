@@ -11,8 +11,8 @@ Ein Code-Editor mit eingebautem [ExecAI-Agenten](https://github.com/execai/execa
 Kein Cursor-Klon — eine Umgebung, in der der Agent lebt:
 
 - **Der `execai`-Agent ist im Paket.** Beim ersten Start wird nichts heruntergeladen; der Agent installiert sich zusätzlich nach `~/.local/bin`, sodass der Befehl `execai` in jedem Terminal funktioniert. Ist bereits ein neuerer Agent vorhanden, nutzt der Editor deinen.
-- **Der ExecAI-Chat ist vorinstalliert und lebt in der rechten Seitenleiste** — `Ctrl+L` fokussiert ihn.
-- **10 Modellquellen** — das ExecAI-Backend, deine Abos von Z.ai / Kimi / Anthropic / OpenAI oder komplett lokal über Ollama. Wechsel im laufenden Betrieb, eine gemeinsame Historie.
+- **Der ExecAI-Chat ist vorinstalliert und lebt in der rechten Seitenleiste** — `Ctrl+L` fokussiert ihn. Chats sind Tabs oben im Panel: Klick wechselt, «×» schließt, Ziehen sortiert um. Links und Dateipfade in Antworten sind klickbar, jeder Codeblock hat einen Kopier-Button.
+- **11 Modellquellen** — das ExecAI-Backend, deine Keys für Z.ai / Kimi Code / Moonshot / Anthropic / OpenAI / OpenRouter oder komplett lokal über Ollama. Wechsel im laufenden Betrieb, eine gemeinsame Historie. — das ExecAI-Backend, deine Abos von Z.ai / Kimi / Anthropic / OpenAI oder komplett lokal über Ollama. Wechsel im laufenden Betrieb, eine gemeinsame Historie.
 - **Sicherheitsstufen und Berechtigungen pro Aktion** — der Agent fragt, bevor er anfasst, was er nicht anfassen sollte.
 - **Open VSX** als Erweiterungskatalog. Keine Microsoft-Dienste, keine Telemetrie über die VSCodium-Defaults hinaus.
 

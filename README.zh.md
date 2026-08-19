@@ -11,8 +11,8 @@
 它不是 Cursor 的克隆 — 而是智能体栖身的环境：
 
 - **`execai` 智能体随包附带。** 首次启动无需任何下载；智能体还会自动安装到 `~/.local/bin`，让 `execai` 命令在任意终端可用。如果你已装有更新版本的智能体，编辑器会直接使用你的。
-- **ExecAI 聊天预装在右侧边栏** — `Ctrl+L` 即可聚焦。
-- **10 个模型来源** — ExecAI 后端、你的 Z.ai / Kimi / Anthropic / OpenAI 订阅，或通过 Ollama 完全本地运行。随时切换，共享同一份历史。
+- **ExecAI 聊天预装在右侧边栏** — `Ctrl+L` 即可聚焦。聊天以标签页形式排在面板顶部：点击切换、「×」关闭、拖动排序。回答中的链接和文件路径可点击，每个代码块都有复制按钮。
+- **11 个模型来源** — ExecAI 后端、你的 Z.ai / Kimi Code / Moonshot / Anthropic / OpenAI / OpenRouter 密钥，或通过 Ollama 完全本地运行。随时切换，共享同一份历史。 — ExecAI 后端、你的 Z.ai / Kimi / Anthropic / OpenAI 订阅，或通过 Ollama 完全本地运行。随时切换，共享同一份历史。
 - **安全级别与逐操作授权** — 智能体在触碰不该碰的东西之前会先询问。
 - **Open VSX** 作为扩展市场。没有 Microsoft 服务，除 VSCodium 默认设置外没有额外遥测。
 
