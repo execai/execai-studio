@@ -270,28 +270,49 @@ try {
 
   Step 6 "starting ExecAI Studio $Version..."
   if (-not (Test-Path $exe)) { throw "the new build has no 'ExecAI Studio.exe' at $Install" }
-  # Start the editor DETACHED from this console: a process started by
-  # Start-Process dies with the console's job when this window closes, and
-  # Electron takes more than a couple of seconds to come up after an update.
-  # cmd's `start` creates an independent process.
-  $startArgs = '/c start "" /D "' + $Install + '" "' + $exe + '"'
-  if ($Folder) { $startArgs += ' "' + $Folder + '"' }
-  Start-Process -FilePath $env:ComSpec -ArgumentList $startArgs -WindowStyle Hidden
-  # Do not leave until the editor is actually alive (or we know it is not).
+  # Launch the way a double-click does: Explorer starts the program detached
+  # from this console (no job, no quoting games). The editor restores its last
+  # workspace itself; a folder argument is passed only when the shell allows.
+  function Start-Studio {
+    try {
+      if ($Folder) { Start-Process -FilePath $exe -ArgumentList ('"' + $Folder + '"') -WorkingDirectory $env:TEMP -ErrorAction Stop | Out-Null }
+      else { Start-Process -FilePath 'explorer.exe' -ArgumentList ('"' + $exe + '"') -ErrorAction Stop | Out-Null }
+    } catch { Write-Host ("        start error: {0}" -f $_.Exception.Message) -ForegroundColor DarkGray }
+  }
+  function Studio-Up {
+    # Any process running from inside the install counts — do not depend on
+    # what Windows calls the process.
+    $ps = @(Get-Process | Where-Object { $p = $null; try { $p = $_.Path } catch {}; $p -and $p.StartsWith($Install, [StringComparison]::OrdinalIgnoreCase) })
+    if ($ps.Count -gt 0) { return $true }
+    return [bool](Get-Process -Name 'ExecAI Studio' -ErrorAction SilentlyContinue)
+  }
+  Start-Studio
   $up = $false; $deadline = (Get-Date).AddSeconds(45)
   while ((Get-Date) -lt $deadline) {
     Start-Sleep -Milliseconds 700
-    $alive = Get-Process -Name 'ExecAI Studio' -ErrorAction SilentlyContinue
-    if ($alive) { $up = $true; break }
+    if (Studio-Up) { $up = $true; break }
   }
   if (-not $up) {
     Write-Host ''
-    Write-Host "  ExecAI Studio did not start on its own - starting it once more" -ForegroundColor Yellow
-    Start-Process -FilePath $env:ComSpec -ArgumentList $startArgs -WindowStyle Hidden
-    Start-Sleep -Seconds 8
-    $up = [bool](Get-Process -Name 'ExecAI Studio' -ErrorAction SilentlyContinue)
+    Write-Host '  ExecAI Studio did not start on its own - starting it once more (via Explorer)' -ForegroundColor Yellow
+    Start-Process -FilePath 'explorer.exe' -ArgumentList ('"' + $exe + '"') | Out-Null
+    Start-Sleep -Seconds 10
+    $up = Studio-Up
   }
-  if (-not $up) { throw "the new ExecAI Studio did not start; run it by hand: $exe" }
+  if (-not $up) {
+    # The update itself succeeded — only the launch did not. Say so plainly
+    # instead of claiming a failed update and rolling a good install back.
+    $names = (Get-Process | Where-Object { $_.ProcessName -like '*xec*' -or $_.ProcessName -like '*tudio*' } | ForEach-Object { "$($_.ProcessName)($($_.Id))" }) -join ', '
+    Write-Host ''
+    Write-Host "  ExecAI Studio $Version is installed, but it did not start automatically." -ForegroundColor Yellow
+    if ($names) { Write-Host "  (running now: $names)" -ForegroundColor DarkGray }
+    Write-Host "  Start it from the Start menu, or here: $exe"
+    Write-Host ''
+    Write-Host '  press Enter to close'
+    [void](Read-Host)
+    Remove-Item $staging -Recurse -Force -ErrorAction SilentlyContinue
+    exit 0
+  }
   Done
   Remove-Item $staging -Recurse -Force -ErrorAction SilentlyContinue
   Start-Sleep -Seconds 3
