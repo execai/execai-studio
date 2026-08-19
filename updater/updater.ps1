@@ -14,6 +14,9 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
+# Our own working directory must not be inside the install: the editor starts
+# us from there, and a folder that is somebody's cwd cannot be moved.
+Set-Location $env:TEMP
 # GitHub needs TLS 1.2; Windows PowerShell 5.1 on older systems does not enable it.
 try { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12 } catch {}
 $Host.UI.RawUI.WindowTitle = "ExecAI Studio - updating to $Version"
@@ -27,16 +30,31 @@ $staging = Join-Path $parent "$leaf.staging-$Version"
 $old     = "$Install.old"
 $exe     = Join-Path $Install 'ExecAI Studio.exe'
 
+function Get-Holders {
+  # Anything that runs from inside the install: the editor and its helpers,
+  # the bundled agent (execai.exe) — by path when readable, by name otherwise.
+  Get-Process | Where-Object {
+    $p = $null; try { $p = $_.Path } catch {}
+    ($p -and $p.StartsWith($Install, [StringComparison]::OrdinalIgnoreCase)) -or
+    (-not $p -and ($_.ProcessName -eq 'ExecAI Studio' -or $_.ProcessName -eq 'execai'))
+  }
+}
 function Step($n, $t) { Write-Host ("  [{0}/6] {1}" -f $n, $t) -NoNewline }
 function Done { Write-Host ' done' -ForegroundColor Green }
 function Retry($what, $act) {
-  # Defender / indexers hold freshly written files for a moment: keep trying.
+  # Defender / indexers hold freshly written files for a moment: keep trying;
+  # a process that re-appeared inside the install is closed on the way.
   $deadline = (Get-Date).AddSeconds(90); $n = 0
   while ($true) {
     try { & $act; return } catch {
       $n++
       if ((Get-Date) -gt $deadline) { throw "$what : $($_.Exception.Message)" }
       if ($n -eq 1) { Write-Host ''; Write-Host '        (files still in use, retrying...)' -ForegroundColor DarkGray }
+      $h = @(Get-Holders)
+      if ($h.Count -gt 0) {
+        Write-Host ("        closing: {0}" -f (($h | ForEach-Object { "$($_.ProcessName)($($_.Id))" }) -join ', ')) -ForegroundColor DarkGray
+        $h | ForEach-Object { try { Stop-Process -Id $_.Id -Force -ErrorAction Stop } catch {} }
+      }
       Start-Sleep -Seconds 2
     }
   }
@@ -103,9 +121,18 @@ try {
   Step 1 'waiting for ExecAI Studio to close...'
   $deadline = (Get-Date).AddMinutes(3)
   while ((Get-Date) -lt $deadline) {
-    $running = Get-Process | Where-Object { try { $_.Path -and $_.Path.StartsWith($Install, [StringComparison]::OrdinalIgnoreCase) } catch { $false } }
-    if (-not $running) { break }
+    $running = @(Get-Holders)
+    if ($running.Count -eq 0) { break }
     Start-Sleep -Milliseconds 500
+  }
+  $left = @(Get-Holders)
+  if ($left.Count -gt 0) {
+    # The editor did not go away by itself (a stuck helper, an agent still
+    # serving) — end what is left so the swap can proceed; say so.
+    Write-Host ''
+    Write-Host ("        still running: {0} - closing" -f (($left | ForEach-Object { "$($_.ProcessName)($($_.Id))" }) -join ', ')) -ForegroundColor DarkGray
+    $left | ForEach-Object { try { Stop-Process -Id $_.Id -Force -ErrorAction Stop } catch {} }
+    Start-Sleep -Seconds 2
   }
   Done
 
