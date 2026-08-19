@@ -30,6 +30,57 @@ $staging = Join-Path $parent "$leaf.staging-$Version"
 $old     = "$Install.old"
 $exe     = Join-Path $Install 'ExecAI Studio.exe'
 
+
+# Who holds files under $dir — the Restart Manager API answers that for any
+# process, not only the ones we can read the path of. Used to name and close
+# the culprit instead of retrying blind.
+$rmSrc = @'
+using System;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
+using System.Text;
+public static class RM {
+  [StructLayout(LayoutKind.Sequential)] struct RM_UNIQUE_PROCESS { public int dwProcessId; public System.Runtime.InteropServices.ComTypes.FILETIME ProcessStartTime; }
+  [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)] struct RM_PROCESS_INFO {
+    public RM_UNIQUE_PROCESS Process;
+    [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 256)] public string strAppName;
+    [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 64)] public string strServiceShortName;
+    public int ApplicationType; public uint AppStatus; public uint TSSessionId; [MarshalAs(UnmanagedType.Bool)] public bool bRestartable; }
+  [DllImport("rstrtmgr.dll", CharSet = CharSet.Unicode)] static extern int RmStartSession(out uint pSessionHandle, int dwSessionFlags, string strSessionKey);
+  [DllImport("rstrtmgr.dll")] static extern int RmEndSession(uint pSessionHandle);
+  [DllImport("rstrtmgr.dll", CharSet = CharSet.Unicode)] static extern int RmRegisterResources(uint pSessionHandle, uint nFiles, string[] rgsFilenames, uint nApplications, IntPtr rgApplications, uint nServices, string[] rgsServiceNames);
+  [DllImport("rstrtmgr.dll")] static extern int RmGetList(uint dwSessionHandle, out uint pnProcInfoNeeded, ref uint pnProcInfo, [In, Out] RM_PROCESS_INFO[] rgAffectedApps, ref uint lpdwRebootReasons);
+  public static List<int> Holders(string[] files) {
+    var result = new List<int>(); uint h; string key = Guid.NewGuid().ToString();
+    if (RmStartSession(out h, 0, key) != 0) return result;
+    try {
+      if (RmRegisterResources(h, (uint)files.Length, files, 0, IntPtr.Zero, 0, null) != 0) return result;
+      uint needed = 0, n = 0, reasons = 0;
+      int r = RmGetList(h, out needed, ref n, null, ref reasons);
+      if (r == 234 /*ERROR_MORE_DATA*/) {
+        var arr = new RM_PROCESS_INFO[needed]; n = needed;
+        if (RmGetList(h, out needed, ref n, arr, ref reasons) == 0) for (int i = 0; i < n; i++) result.Add(arr[i].Process.dwProcessId);
+      }
+    } finally { RmEndSession(h); }
+    return result;
+  }
+}
+'@
+try { Add-Type -TypeDefinition $rmSrc -ErrorAction Stop } catch {}
+function Get-FileHolders([string]$dir) {
+  # Register every file in the tree (Restart Manager wants file paths, not a folder).
+  $files = @(Get-ChildItem -Path $dir -Recurse -File -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName })
+  if ($files.Count -eq 0) { return @() }
+  $pids = @()
+  # RmRegisterResources has a limit per call; chunk it.
+  for ($i = 0; $i -lt $files.Count; $i += 4000) {
+    $chunk = $files[$i..([Math]::Min($i + 3999, $files.Count - 1))]
+    try { $pids += [RM]::Holders([string[]]$chunk) } catch {}
+  }
+  $pids = $pids | Select-Object -Unique | Where-Object { $_ -ne $PID }
+  foreach ($id in $pids) { try { Get-Process -Id $id -ErrorAction Stop } catch {} }
+}
+
 function Get-Holders {
   # Anything that runs from inside the install: the editor and its helpers,
   # the bundled agent (execai.exe) — by path when readable, by name otherwise.
@@ -50,10 +101,13 @@ function Retry($what, $act) {
       $n++
       if ((Get-Date) -gt $deadline) { throw "$what : $($_.Exception.Message)" }
       if ($n -eq 1) { Write-Host ''; Write-Host '        (files still in use, retrying...)' -ForegroundColor DarkGray }
-      $h = @(Get-Holders)
+      $h = @(Get-Holders) + @(Get-FileHolders $Install)
+      $h = $h | Sort-Object Id -Unique
       if ($h.Count -gt 0) {
-        Write-Host ("        closing: {0}" -f (($h | ForEach-Object { "$($_.ProcessName)($($_.Id))" }) -join ', ')) -ForegroundColor DarkGray
+        Write-Host ("        in use by: {0} - closing" -f (($h | ForEach-Object { "$($_.ProcessName)($($_.Id))" }) -join ', ')) -ForegroundColor DarkGray
         $h | ForEach-Object { try { Stop-Process -Id $_.Id -Force -ErrorAction Stop } catch {} }
+      } elseif ($n -eq 2) {
+        Write-Host '        (no process found holding the folder - likely antivirus/indexer; waiting)' -ForegroundColor DarkGray
       }
       Start-Sleep -Seconds 2
     }
@@ -195,8 +249,23 @@ try {
   if (-not $fresh) { throw 'the archive is empty' }
 
   Step 5 'installing...'
-  Retry 'could not move the current version aside' { if (Test-Path $old) { Remove-Item $old -Recurse -Force }; Move-Item $Install $old }
-  Retry 'could not put the new version in place'   { Move-Item $fresh $Install }
+  $swapped = $false
+  try {
+    Retry 'could not move the current version aside' { if (Test-Path $old) { Remove-Item $old -Recurse -Force }; Move-Item $Install $old }
+    Retry 'could not put the new version in place'   { Move-Item $fresh $Install }
+    $swapped = $true
+  } catch {
+    # Plan B: the folder as a whole will not move (something outside our
+    # reach holds one file) — copy the new tree over the old one in place.
+    # robocopy /MIR updates everything it can and reports what it could not.
+    Write-Host ''
+    Write-Host '        folder swap blocked - installing file by file' -ForegroundColor DarkGray
+    if ((Test-Path $old) -and -not (Test-Path $Install)) { Move-Item $old $Install }
+    $rc = (Start-Process robocopy -ArgumentList @("`"$fresh`"", "`"$Install`"", '/MIR', '/R:15', '/W:2', '/NFL', '/NDL', '/NJH', '/NJS', '/NP') -Wait -PassThru -NoNewWindow).ExitCode
+    if ($rc -ge 8) { throw "file-by-file install failed (robocopy $rc)" }
+    $swapped = $true
+  }
+  if (-not $swapped) { throw 'could not install' }
   Done
 
   Step 6 "starting ExecAI Studio $Version..."
