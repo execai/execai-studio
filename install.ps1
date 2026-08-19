@@ -85,6 +85,26 @@ try {
   Get-WithProgress "$Mirror/$file" $tmp
 }
 
+# Checksum: SHA256SUMS from GitHub, then the mirror. .Content of an
+# octet-stream response is a byte[] in Windows PowerShell 5.1 — decode it.
+function Get-Text([string]$u) {
+  $r = Invoke-WebRequest -UseBasicParsing -TimeoutSec 30 $u
+  if ($r.Content -is [byte[]]) { return [Text.Encoding]::UTF8.GetString($r.Content) }
+  return [string]$r.Content
+}
+$sums = $null
+try { $sums = Get-Text "https://github.com/$Repo/releases/download/v$version/SHA256SUMS" } catch {}
+if (-not $sums) { try { $sums = Get-Text "$Mirror/SHA256SUMS" } catch {} }
+if ($sums) {
+  $line = ($sums -split "[`r`n]+") | Where-Object { $_.Trim().EndsWith($file) } | Select-Object -First 1
+  if ($line) {
+    $want = ($line.Trim() -split '\s+')[0].ToLower()
+    $got  = (Get-FileHash -Algorithm SHA256 $tmp).Hash.ToLower()
+    if ($want -ne $got) { throw 'checksum mismatch - the file is corrupted or tampered with' }
+    Write-Host '==> checksum ok'
+  }
+}
+
 $dest = Join-Path $env:LOCALAPPDATA 'Programs\ExecAI Studio'
 if (Test-Path $dest) { Remove-Item $dest -Recurse -Force }
 New-Item -ItemType Directory -Force (Split-Path $dest) | Out-Null

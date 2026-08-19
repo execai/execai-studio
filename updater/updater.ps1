@@ -126,10 +126,17 @@ try {
   Done
 
   Step 3 'verifying checksum...'
+  # .Content of an octet-stream response is a byte[] in Windows PowerShell 5.1
+  # (the mirror serves SHA256SUMS that way) — decode it as text explicitly.
+  function Get-Text([string]$u) {
+    $r = Invoke-WebRequest -UseBasicParsing -TimeoutSec 30 $u
+    if ($r.Content -is [byte[]]) { return [Text.Encoding]::UTF8.GetString($r.Content) }
+    return [string]$r.Content
+  }
   $sums = $null
-  try { $sums = (Invoke-WebRequest -UseBasicParsing "https://github.com/$Repo/releases/download/v$Version/SHA256SUMS").Content } catch {}
-  if (-not $sums) { $sums = (Invoke-WebRequest -UseBasicParsing "$Mirror/SHA256SUMS").Content }
-  $line = ($sums -split "`n") | Where-Object { $_.Trim().EndsWith($file) } | Select-Object -First 1
+  try { $sums = Get-Text "https://github.com/$Repo/releases/download/v$Version/SHA256SUMS" } catch {}
+  if (-not $sums) { $sums = Get-Text "$Mirror/SHA256SUMS" }
+  $line = ($sums -split "[`r`n]+") | Where-Object { $_.Trim().EndsWith($file) } | Select-Object -First 1
   if (-not $line) { throw "$file is missing from SHA256SUMS" }
   $want = ($line.Trim() -split '\s+')[0].ToLower()
   $got  = (Get-FileHash -Algorithm SHA256 $zip).Hash.ToLower()
