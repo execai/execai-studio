@@ -10,6 +10,12 @@
 #   install-dir: <…>/execai-studio (linux) or <…>/ExecAI Studio.app (macOS)
 
 set -euo pipefail
+# Same reason as in updater.ps1: the extension host runs Electron in Node mode,
+# and an inherited ELECTRON_RUN_AS_NODE makes the newly installed editor start
+# as node and try to require the project folder as a module.
+while IFS= read -r v; do
+  unset "$v" 2>/dev/null || true
+done < <(env | sed -n 's/^\(ELECTRON_[A-Za-z0-9_]*\|VSCODE_[A-Za-z0-9_]*\)=.*/\1/p')
 VERSION="$1"; INSTALL="$2"; FOLDER="${3:-}"
 REPO="execai/execai-studio"
 MIRROR="https://storage.yandexcloud.net/execai-agent-prod/execai-studio/stable"

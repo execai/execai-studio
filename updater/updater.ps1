@@ -14,6 +14,15 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
+# Editor-only variables must not reach the new build. The updater is started
+# by the extension host, which runs Electron in Node mode: with
+# ELECTRON_RUN_AS_NODE inherited, the freshly installed ExecAI Studio starts as
+# node and tries to require its first argument — the project folder — as a
+# module ("Cannot find module \'c:\\...\'"). Everything VSCODE_* belongs to the
+# instance that is exiting, not to the one we are about to start.
+foreach ($n in @(Get-ChildItem Env: | Where-Object { $_.Name -like 'ELECTRON_*' -or $_.Name -like 'VSCODE_*' })) {
+  Remove-Item -Path ("Env:" + $n.Name) -ErrorAction SilentlyContinue
+}
 # Our own working directory must not be inside the install: the editor starts
 # us from there, and a folder that is somebody's cwd cannot be moved.
 Set-Location $env:TEMP
