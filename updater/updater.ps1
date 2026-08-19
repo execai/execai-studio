@@ -14,6 +14,8 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
+# GitHub needs TLS 1.2; Windows PowerShell 5.1 on older systems does not enable it.
+try { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12 } catch {}
 $Host.UI.RawUI.WindowTitle = "ExecAI Studio - updating to $Version"
 
 $Repo   = 'execai/execai-studio'
@@ -40,7 +42,21 @@ function Retry($what, $act) {
   }
 }
 function Get-WithProgress([string]$url, [string]$out, [string]$label) {
-  $client = New-Object System.Net.Http.HttpClient
+  # Windows PowerShell 5.1 does not have System.Net.Http loaded; ask for it,
+  # and if that fails too (very old .NET) fall back to WebClient.
+  $client = $null
+  try { Add-Type -AssemblyName System.Net.Http -ErrorAction Stop; $client = New-Object System.Net.Http.HttpClient } catch { $client = $null }
+  if (-not $client) {
+    $wc = New-Object System.Net.WebClient
+    $done = 0L; $last = -1
+    $null = Register-ObjectEvent $wc DownloadProgressChanged -SourceIdentifier dl -Action {
+      $p = $EventArgs.ProgressPercentage
+      Write-Host ("`r  $($Event.MessageData) {0,3}%  ({1:N0} / {2:N0} MB)" -f $p, ($EventArgs.BytesReceived/1MB), ($EventArgs.TotalBytesToReceive/1MB)) -NoNewline
+    } -MessageData $label
+    try { $wc.DownloadFileTaskAsync($url, $out).GetAwaiter().GetResult() }
+    finally { Unregister-Event dl -ErrorAction SilentlyContinue; $wc.Dispose() }
+    return
+  }
   $client.Timeout = [TimeSpan]::FromMinutes(20)
   try {
     $resp = $client.GetAsync($url, [System.Net.Http.HttpCompletionOption]::ResponseHeadersRead).GetAwaiter().GetResult()
@@ -59,6 +75,25 @@ function Get-WithProgress([string]$url, [string]$out, [string]$label) {
       }
     } finally { $fs.Dispose(); $in.Dispose() }
   } finally { $client.Dispose() }
+}
+
+# The updater itself may be fixed in the release being installed. Unless this
+# copy is already that fresh one, fetch updater.ps1 from the target release
+# and hand over to it; on any failure keep going with this copy.
+if (-not $env:EXECAI_UPDATER_FRESH) {
+  try {
+    $self = Join-Path $env:TEMP "execai-studio-updater-$Version.ps1"
+    $src = "https://raw.githubusercontent.com/$Repo/v$Version/updater/updater.ps1"
+    try { Invoke-WebRequest -UseBasicParsing -TimeoutSec 20 $src -OutFile $self }
+    catch { Invoke-WebRequest -UseBasicParsing -TimeoutSec 20 "$Mirror/updater.ps1" -OutFile $self }
+    if ((Get-Item $self).Length -gt 1000) {
+      $env:EXECAI_UPDATER_FRESH = '1'
+      $argv = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $self, '-Version', $Version, '-Install', $Install)
+      if ($Folder) { $argv += @('-Folder', $Folder) }
+      & powershell.exe @argv
+      exit $LASTEXITCODE
+    }
+  } catch { }
 }
 
 Write-Host ''

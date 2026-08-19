@@ -12,6 +12,8 @@
 
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
+# GitHub needs TLS 1.2; Windows PowerShell 5.1 on older systems does not enable it.
+try { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12 } catch {}
 
 $Mirror = 'https://storage.yandexcloud.net/execai-agent-prod/execai-studio/stable'
 $Repo = 'execai/execai-studio'
@@ -39,8 +41,22 @@ Write-Host "==> ExecAI Studio $version ($Platform)"
 # Download with a percentage. Invoke-WebRequest's own progress bar makes the
 # download several times slower, so the stream is copied by hand and the
 # console line is updated in place.
-function Get-WithProgress([string]$url, [string]$out) {
-  $client = New-Object System.Net.Http.HttpClient
+function Get-WithProgress([string]$url, [string]$out, [string]$label = "    downloading") {
+  # Windows PowerShell 5.1 does not have System.Net.Http loaded; ask for it,
+  # and if that fails too (very old .NET) fall back to WebClient.
+  $client = $null
+  try { Add-Type -AssemblyName System.Net.Http -ErrorAction Stop; $client = New-Object System.Net.Http.HttpClient } catch { $client = $null }
+  if (-not $client) {
+    $wc = New-Object System.Net.WebClient
+    $done = 0L; $last = -1
+    $null = Register-ObjectEvent $wc DownloadProgressChanged -SourceIdentifier dl -Action {
+      $p = $EventArgs.ProgressPercentage
+      Write-Host ("`r  $($Event.MessageData) {0,3}%  ({1:N0} / {2:N0} MB)" -f $p, ($EventArgs.BytesReceived/1MB), ($EventArgs.TotalBytesToReceive/1MB)) -NoNewline
+    } -MessageData $label
+    try { $wc.DownloadFileTaskAsync($url, $out).GetAwaiter().GetResult() }
+    finally { Unregister-Event dl -ErrorAction SilentlyContinue; $wc.Dispose() }
+    return
+  }
   $client.Timeout = [TimeSpan]::FromMinutes(20)
   try {
     $resp = $client.GetAsync($url, [System.Net.Http.HttpCompletionOption]::ResponseHeadersRead).GetAwaiter().GetResult()
@@ -54,12 +70,9 @@ function Get-WithProgress([string]$url, [string]$out) {
         $fs.Write($buf, 0, $n); $done += $n
         if ($total) {
           $pct = [int](100 * $done / $total)
-          if ($pct -ne $last) { Write-Host ("`r    downloading {0,3}%  ({1:N0} / {2:N0} MB)" -f $pct, ($done/1MB), ($total/1MB)) -NoNewline; $last = $pct }
-        } else {
-          Write-Host ("`r    downloading {0:N0} MB" -f ($done/1MB)) -NoNewline
+          if ($pct -ne $last) { Write-Host ("`r  $label {0,3}%  ({1:N0} / {2:N0} MB)" -f $pct, ($done/1MB), ($total/1MB)) -NoNewline; $last = $pct }
         }
       }
-      Write-Host ''
     } finally { $fs.Dispose(); $in.Dispose() }
   } finally { $client.Dispose() }
 }

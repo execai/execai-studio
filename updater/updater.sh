@@ -36,6 +36,19 @@ fail() {
 }
 trap 'fail "unexpected error on line $LINENO"' ERR
 
+# The updater itself may be fixed in the release being installed: fetch the
+# target release's updater.sh and hand over to it; on failure keep this copy.
+if [[ -z "${EXECAI_UPDATER_FRESH:-}" ]]; then
+  SELF="${TMPDIR:-/tmp}/execai-studio-updater-$VERSION.sh"
+  if curl -fsSL --max-time 20 -o "$SELF" "https://raw.githubusercontent.com/$REPO/v$VERSION/updater/updater.sh" 2>/dev/null \
+     || curl -fsSL --max-time 20 -o "$SELF" "$MIRROR/updater.sh" 2>/dev/null; then
+    if [[ -s "$SELF" ]] && bash -n "$SELF" 2>/dev/null; then
+      chmod +x "$SELF"
+      EXECAI_UPDATER_FRESH=1 exec bash "$SELF" "$VERSION" "$INSTALL" "$FOLDER"
+    fi
+  fi
+fi
+
 echo; echo "  ExecAI Studio update $VERSION"; echo "  ------------------------------"
 
 step 1 "waiting for ExecAI Studio to close..."

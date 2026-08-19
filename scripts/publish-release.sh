@@ -130,6 +130,12 @@ aws --endpoint-url=https://storage.yandexcloud.net s3 cp --no-progress --recursi
 for s in install.sh install.ps1; do
   aws --endpoint-url=https://storage.yandexcloud.net s3 cp --no-progress "$ROOT/$s" "$BUCKET/$s"
 done
+# The updater self-refreshes from the target release: raw.githubusercontent
+# at the release tag first (the tag is created by `gh release create` below on
+# the public mirror's main), the mirror second.
+for s in updater.sh updater.ps1; do
+  aws --endpoint-url=https://storage.yandexcloud.net s3 cp --no-progress "$ROOT/updater/$s" "$BUCKET/$s"
+done
 
 echo "==> publishing GitHub release v${VERSION}"
 gh release create "v${VERSION}" --repo "$REPO" \
