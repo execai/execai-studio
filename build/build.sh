@@ -135,8 +135,12 @@ echo "==> version gate: agent $AGENT_VERSION >= MIN_CLI $MIN_CLI"
 # Help → Check for Updates goes through VS Code's own updater against OUR feed
 # ({updateUrl}/{quality}/{platform}/{arch}/latest.json), so it no longer offers
 # to turn Studio back into vanilla VSCodium. The version gets the Studio
-# release as semver build metadata (1.126.04524+0.1.5): a new Studio on the
-# same VSCodium base still compares as newer (semver.compareBuild). Nothing is
+# release as a semver PRE-RELEASE suffix (1.126.04524-0.1.5): a new Studio on
+# the same VSCodium base still compares as newer (semver.compareBuild handles
+# pre-release ordering). A dash, NOT a plus: "+build" metadata breaks VS Code's
+# extension-compatibility parser (its version regex allows only "-suffix"), and
+# every Marketplace install then fails with "not compatible with the current
+# version" — that was a real bug up to Studio 0.1.35. Nothing is
 # downloaded silently by the core updater — its «Download Update» opens
 # downloadUrl, and that is our own URI (execai-studio://execai.execai/update),
 # which the editor routes to the ExecAI extension's UriHandler; the extension
@@ -164,7 +168,7 @@ jq --arg v "$STUDIO_VERSION" '
   | .documentationUrl = "https://github.com/execai/execai-studio#readme"
   | .updateUrl = "https://storage.yandexcloud.net/execai-agent-prod/execai-studio/update"
   | .downloadUrl = "execai-studio://execai.execai/update"
-  | .version = (.version + "+" + $v)
+  | .version = (.version + "-" + $v)
   | .configurationDefaults = (.configurationDefaults // {}) + {
       "workbench.secondarySideBar.defaultVisibility": "visible",
       "chat.disableAIFeatures": true
@@ -360,7 +364,7 @@ if jq -e '.checksums' "$PRODUCT" >/dev/null; then
 fi
 
 # --- 7. Sanity + package ----------------------------------------------------
-jq -e '.nameShort == "ExecAI Studio" and (.updateUrl | test("execai-studio/update$")) and (.version | test("\\+"))' "$PRODUCT" >/dev/null
+jq -e '.nameShort == "ExecAI Studio" and (.updateUrl | test("execai-studio/update$")) and (.version | test("^[0-9]+\\.[0-9]+\\.[0-9]+-")) and (.version | test("\\+") | not)' "$PRODUCT" >/dev/null
 [[ -f "$EXT_DIR/package.json" ]]
 # The MIT notices must survive the repack, ours must be present.
 [[ -f "$APP/LICENSE.txt" && -f "$APP/ThirdPartyNotices.txt" && -f "$APP/LICENSE-EXECAI.txt" ]] \

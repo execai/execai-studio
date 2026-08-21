@@ -89,12 +89,13 @@ jq -e .version latest.json >/dev/null # syntax check
 # Feed for VS Code's own updater (Help → Check for Updates):
 # {updateUrl}/{quality}/{platform}/{arch}/latest.json with
 # {url, version, productVersion, timestamp}. productVersion must be the exact
-# string stamped into product.json.version (base VSCodium + "+" + Studio):
+# string stamped into product.json.version (base VSCodium + "-" + Studio —
+# a dash: "+build" would break VS Code's extension-compat version parser):
 # the updater compares them with semver.compareBuild. `url` is what the
 # updater opens on Linux; Windows/macOS open product.json.downloadUrl instead.
 CODIUM_VERSION="$(sed -n 's/^VSCODIUM_VERSION="\${VSCODIUM_VERSION:-\(.*\)}"$/\1/p' "$ROOT/build/build.sh")"
 [[ -n "$CODIUM_VERSION" ]] || { echo "could not read VSCODIUM_VERSION from build.sh" >&2; exit 1; }
-PRODUCT_VERSION="${CODIUM_VERSION}+${VERSION}"
+PRODUCT_VERSION="${CODIUM_VERSION}-${VERSION}"
 NOW_MS="$(date +%s)000"
 mkdir -p update
 # On Windows the core updater appends its setup kind to the path
