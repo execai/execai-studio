@@ -226,6 +226,28 @@ for f in "$APP/out/main.js" "$APP/out/vs/workbench/workbench.desktop.main.js"; d
     || { echo "updater defaults not found exactly once in $(basename "$f") (mode=$n_mode age=$n_age) — upstream changed, revisit step 3c" >&2; exit 1; }
 done
 
+# --- 3d. Window class (Linux) -----------------------------------------------
+# Electron reads `desktopName` from resources/app/package.json and calls
+# app.setDesktopName() with it unconditionally (lib/browser/init.ts); that
+# name, minus ".desktop", becomes WM_CLASS of every window and the Wayland
+# app id. VSCodium ships "codium.desktop", so panels and docks grouped our
+# windows under «codium» with a generic icon, and the StartupWMClass in our
+# .desktop entry never matched. Neither --class, nor CHROME_DESKTOP, nor
+# package.json "name" override it — only this field does. The bundles carry
+# an inlined copy of package.json; it is kept in step for anything that reads
+# it from there. None of these files is covered by product.json checksums.
+jq '.desktopName = "execai-studio.desktop"' "$APP/package.json" > "$APP/package.json.tmp" \
+  && mv "$APP/package.json.tmp" "$APP/package.json"
+jq -e '.desktopName == "execai-studio.desktop"' "$APP/package.json" >/dev/null \
+  || { echo "desktopName not set in package.json" >&2; exit 1; }
+for f in "$APP/out/main.js" "$APP/out/bootstrap-fork.js" "$APP/out/cli.js"; do
+  [[ -f "$f" ]] || { echo "bundle not found: $f" >&2; exit 1; }
+  sed -i 's/"desktopName":"codium.desktop"/"desktopName":"execai-studio.desktop"/' "$f"
+  n="$(grep -o '"desktopName":"execai-studio.desktop"' "$f" | wc -l)"
+  [[ "$n" -eq 1 ]] \
+    || { echo "inlined desktopName not found exactly once in $(basename "$f") (n=$n) — upstream changed, revisit step 3d" >&2; exit 1; }
+done
+
 # --- 4. Brand assets and launcher names -------------------------------------
 # The ExecAI logo goes everywhere VSCodium's mark appears. One source of truth
 # — branding/icon.png — wrapped into SVG/ICO/ICNS containers as needed (both
