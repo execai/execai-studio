@@ -236,17 +236,21 @@ done
 # package.json "name" override it — only this field does. The bundles carry
 # an inlined copy of package.json; it is kept in step for anything that reads
 # it from there. None of these files is covered by product.json checksums.
-jq '.desktopName = "execai-studio.desktop"' "$APP/package.json" > "$APP/package.json.tmp" \
-  && mv "$APP/package.json.tmp" "$APP/package.json"
-jq -e '.desktopName == "execai-studio.desktop"' "$APP/package.json" >/dev/null \
-  || { echo "desktopName not set in package.json" >&2; exit 1; }
-for f in "$APP/out/main.js" "$APP/out/bootstrap-fork.js" "$APP/out/cli.js"; do
-  [[ -f "$f" ]] || { echo "bundle not found: $f" >&2; exit 1; }
-  sed -i 's/"desktopName":"codium.desktop"/"desktopName":"execai-studio.desktop"/' "$f"
-  n="$(grep -o '"desktopName":"execai-studio.desktop"' "$f" | wc -l)"
-  [[ "$n" -eq 1 ]] \
-    || { echo "inlined desktopName not found exactly once in $(basename "$f") (n=$n) — upstream changed, revisit step 3d" >&2; exit 1; }
-done
+# Linux only: VS Code's build adds `desktopName` to the Linux artifacts alone,
+# and a grep for it under pipefail would kill the Windows/macOS builds quietly.
+if [[ "$PLATFORM" == linux-* ]]; then
+  jq '.desktopName = "execai-studio.desktop"' "$APP/package.json" > "$APP/package.json.tmp" \
+    && mv "$APP/package.json.tmp" "$APP/package.json"
+  jq -e '.desktopName == "execai-studio.desktop"' "$APP/package.json" >/dev/null \
+    || { echo "desktopName not set in package.json" >&2; exit 1; }
+  for f in "$APP/out/main.js" "$APP/out/bootstrap-fork.js" "$APP/out/cli.js"; do
+    [[ -f "$f" ]] || { echo "bundle not found: $f" >&2; exit 1; }
+    sed -i 's/"desktopName":"codium.desktop"/"desktopName":"execai-studio.desktop"/' "$f"
+    n="$(grep -o '"desktopName":"execai-studio.desktop"' "$f" | wc -l || true)"
+    [[ "$n" -eq 1 ]] \
+      || { echo "inlined desktopName not found exactly once in $(basename "$f") (n=$n) — upstream changed, revisit step 3d" >&2; exit 1; }
+  done
+fi
 
 # --- 4. Brand assets and launcher names -------------------------------------
 # The ExecAI logo goes everywhere VSCodium's mark appears. One source of truth
