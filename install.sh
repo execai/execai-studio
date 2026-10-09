@@ -89,10 +89,13 @@ if [[ "$PLATFORM" == darwin-* ]]; then
   mkdir -p "$HOME/Applications"
   rm -rf "$DEST"
   mv "$TMP/ExecAI-Studio-${PLATFORM}/ExecAI Studio.app" "$DEST"
-  # The bundle was modified after VSCodium signed it; an ad-hoc signature
-  # makes it launchable (arm64 refuses unsigned binaries outright).
-  codesign --force --deep -s - "$DEST" 2>/dev/null || true
-  xattr -dr com.apple.quarantine "$DEST" 2>/dev/null || true
+  # The artifact is already signed ad-hoc at build time (rcodesign); re-signing
+  # here is a safety net. xattr FIRST: quarantine/detritus on the files makes
+  # codesign fail with «resource fork … not allowed», which used to be swallowed
+  # silently and left the bundle unsigned (an instant kill on Apple Silicon).
+  xattr -cr "$DEST" 2>/dev/null || true
+  codesign --force --deep -s - "$DEST" \
+    || echo "warning: codesign failed — if the app will not start, run: codesign --force --deep -s - '$DEST'" >&2
   mkdir -p "$HOME/.local/bin"
   ln -sf "$DEST/Contents/Resources/app/bin/execai-studio" "$HOME/.local/bin/execai-studio"
   echo "==> installed: $DEST (also linked as ~/.local/bin/execai-studio)"

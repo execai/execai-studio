@@ -103,8 +103,12 @@ FRESH="$TOP"
 if [[ "$PLATFORM" == darwin-* ]]; then
   FRESH="$(find "$TOP" -mindepth 1 -maxdepth 1 -name '*.app' | head -1)"
   [[ -n "$FRESH" ]] || fail "no .app in the archive"
-  codesign --force --deep -s - "$FRESH" 2>/dev/null || true
-  xattr -dr com.apple.quarantine "$FRESH" 2>/dev/null || true
+  # xattr FIRST: quarantine/detritus makes codesign fail, and the bundle was
+  # left unsigned (Apple Silicon kills such a bundle at launch). The artifact
+  # is signed at build time (rcodesign) — this is only a safety net.
+  xattr -cr "$FRESH" 2>/dev/null || true
+  codesign --force --deep -s - "$FRESH" 2>/dev/null \
+    || echo "warning: codesign failed; the build-time signature remains" >&2
 fi
 
 step 5 "installing..."

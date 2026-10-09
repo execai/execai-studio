@@ -389,6 +389,29 @@ if jq -e '.checksums' "$PRODUCT" >/dev/null; then
   rm -f "$TMP_SUMS"
 fi
 
+# --- 6c. Ad-hoc signature of the macOS bundle (rcodesign) -------------------
+# Repacking breaks VSCodium's signature, and Apple Silicon simply kills an
+# unsigned Mach-O at launch (SIGKILL, Code Signature Invalid) — install.sh with
+# its own codesign only saves those who installed via curl|bash. So the bundle
+# is signed ad-hoc right here: rcodesign runs on Linux and signs nested bundles
+# (helpers, frameworks) recursively, inside out. The signature must be the LAST
+# change to the bundle — any edit after it breaks it again.
+if [[ "$PLATFORM" == darwin-* ]]; then
+  RCODESIGN="$CACHE/rcodesign"
+  if [[ ! -x "$RCODESIGN" ]]; then
+    echo "==> fetching rcodesign (ad-hoc signer for macOS bundles)"
+    RCS_VER="0.29.0"
+    curl -fsSL --retry 3 -o "$CACHE/rcs.tar.gz" \
+      "https://github.com/indygreg/apple-platform-rs/releases/download/apple-codesign%2F${RCS_VER}/apple-codesign-${RCS_VER}-x86_64-unknown-linux-musl.tar.gz"
+    tar xzf "$CACHE/rcs.tar.gz" -C "$CACHE" --strip-components=1 \
+      "apple-codesign-${RCS_VER}-x86_64-unknown-linux-musl/rcodesign"
+    rm -f "$CACHE/rcs.tar.gz"
+    chmod +x "$RCODESIGN"
+  fi
+  echo "==> ad-hoc signing ExecAI Studio.app"
+  "$RCODESIGN" sign "$OUT/ExecAI Studio.app" >/dev/null
+fi
+
 # --- 7. Sanity + package ----------------------------------------------------
 jq -e '.nameShort == "ExecAI Studio" and (.updateUrl | test("execai-studio/update$")) and (.version | test("^[0-9]+\\.[0-9]+\\.[0-9]+-")) and (.version | test("\\+") | not)' "$PRODUCT" >/dev/null
 [[ -f "$EXT_DIR/package.json" ]]
