@@ -10,9 +10,10 @@ A code editor with the [ExecAI agent](https://github.com/execai/execai-agent) bu
 
 Not a Cursor clone — an environment the agent lives in:
 
-- **The `execai` agent ships inside.** No downloads on first start; the agent also installs itself into `~/.local/bin` so the `execai` command works in any terminal. If you already have a newer agent, the editor uses yours.
+- **The `execai` agent ships inside.** No downloads on first start; on Linux and macOS the agent also installs itself into `~/.local/bin` so the `execai` command works in any terminal. If you already have a newer agent, the editor uses yours.
 - **The ExecAI chat is pre-installed and lives in the right side bar** — `Ctrl+L` focuses it. Chats are tabs at the top of the panel: click to switch, «×» to close, drag to reorder. Links and file paths in answers are clickable, and every code block has a copy button.
-- **11 model sources** — the ExecAI backend, your Z.ai / Kimi Code / Moonshot / Anthropic / OpenAI / OpenRouter keys, or fully local via Ollama. Switch on the fly, one shared history. — ExecAI backend, your Z.ai / Kimi / Anthropic / OpenAI subscriptions, or fully local via Ollama. Switch on the fly, one shared history.
+- **Getting started on first start** — an empty chat shows five steps with ticks (sign in, connect models, turn on sync, bind the folder to a project, call the agent from your phone), each with the button that does it. **My machine** in the panel title bar shows the agent version, the plan, which model sources answer, what sync carries, and a QR code for the phone.
+- **12 model sources** — the ExecAI backend, your Z.ai / Kimi Code / Moonshot / Anthropic / OpenAI / OpenRouter keys, your own OpenAI- or Anthropic-compatible endpoint, or fully local via Ollama. Switch on the fly, one shared history.
 - **Security levels and per-action permissions** — the agent asks before it touches things it shouldn't.
 - **Open VSX** as the extension gallery. No Microsoft services, no telemetry beyond VSCodium defaults.
 
@@ -38,7 +39,7 @@ irm https://raw.githubusercontent.com/execai/execai-studio/main/install.ps1 | ie
 
 The script picks the build for your OS (Linux x64, Windows x64, macOS Intel/Apple Silicon), downloads it from the mirror or GitHub, verifies the checksum and adds a menu entry. Manual downloads: [Releases](https://github.com/execai/execai-studio/releases/latest). The Windows and macOS builds are not code-signed yet — the install scripts handle that (ad-hoc signing on macOS; on Windows nothing arrives with the mark-of-the-web, so there is no SmartScreen wall).
 
-Updates: the editor checks the mirror and GitHub Releases itself and offers a download when a new version is out.
+Updates: the editor checks the mirror and GitHub Releases itself and, when a new version is out, offers **Update and restart** — the new build is downloaded, its checksum verified, and it replaces the old one.
 
 ## Build from source
 

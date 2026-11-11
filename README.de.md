@@ -10,9 +10,10 @@ Ein Code-Editor mit eingebautem [ExecAI-Agenten](https://github.com/execai/execa
 
 Kein Cursor-Klon — eine Umgebung, in der der Agent lebt:
 
-- **Der `execai`-Agent ist im Paket.** Beim ersten Start wird nichts heruntergeladen; der Agent installiert sich zusätzlich nach `~/.local/bin`, sodass der Befehl `execai` in jedem Terminal funktioniert. Ist bereits ein neuerer Agent vorhanden, nutzt der Editor deinen.
+- **Der `execai`-Agent ist im Paket.** Beim ersten Start wird nichts heruntergeladen; unter Linux und macOS installiert sich der Agent zusätzlich nach `~/.local/bin`, sodass der Befehl `execai` in jedem Terminal funktioniert. Ist bereits ein neuerer Agent vorhanden, nutzt der Editor deinen.
 - **Der ExecAI-Chat ist vorinstalliert und lebt in der rechten Seitenleiste** — `Ctrl+L` fokussiert ihn. Chats sind Tabs oben im Panel: Klick wechselt, «×» schließt, Ziehen sortiert um. Links und Dateipfade in Antworten sind klickbar, jeder Codeblock hat einen Kopier-Button.
-- **11 Modellquellen** — das ExecAI-Backend, deine Keys für Z.ai / Kimi Code / Moonshot / Anthropic / OpenAI / OpenRouter oder komplett lokal über Ollama. Wechsel im laufenden Betrieb, eine gemeinsame Historie. — das ExecAI-Backend, deine Abos von Z.ai / Kimi / Anthropic / OpenAI oder komplett lokal über Ollama. Wechsel im laufenden Betrieb, eine gemeinsame Historie.
+- **Getting started beim ersten Start** — ein leerer Chat zeigt fünf Schritte mit Häkchen (anmelden, Modelle verbinden, Sync einschalten, den Ordner an ein Projekt binden, den Agenten vom Handy aus rufen), jeder mit der Schaltfläche, die ihn erledigt. **My machine** in der Titelleiste des Panels zeigt die Agent-Version, den Tarif, welche Modellquellen antworten, was der Sync überträgt, und einen QR-Code fürs Handy.
+- **12 Modellquellen** — das ExecAI-Backend, deine Keys für Z.ai / Kimi Code / Moonshot / Anthropic / OpenAI / OpenRouter, dein eigener OpenAI- oder Anthropic-kompatibler Endpoint oder komplett lokal über Ollama. Wechsel im laufenden Betrieb, eine gemeinsame Historie.
 - **Sicherheitsstufen und Berechtigungen pro Aktion** — der Agent fragt, bevor er anfasst, was er nicht anfassen sollte.
 - **Open VSX** als Erweiterungskatalog. Keine Microsoft-Dienste, keine Telemetrie über die VSCodium-Defaults hinaus.
 
@@ -38,7 +39,7 @@ irm https://raw.githubusercontent.com/execai/execai-studio/main/install.ps1 | ie
 
 Das Skript wählt den Build für dein System (Linux x64, Windows x64, macOS Intel/Apple Silicon), lädt ihn vom Spiegel oder von GitHub, prüft die Checksumme und legt einen Menüeintrag an. Manueller Download: [Releases](https://github.com/execai/execai-studio/releases/latest). Die Windows- und macOS-Builds sind noch nicht signiert — die Install-Skripte kümmern sich darum (Ad-hoc-Signatur auf macOS; unter Windows kommt nichts mit dem Mark-of-the-Web an, also keine SmartScreen-Wand).
 
-Updates: Der Editor prüft Spiegel und GitHub Releases selbst und bietet den Download an, sobald eine neue Version erschienen ist.
+Updates: Der Editor prüft Spiegel und GitHub Releases selbst und bietet, sobald eine neue Version erschienen ist, **Update and restart** an — der neue Build wird geladen, seine Checksumme geprüft, und er ersetzt den alten.
 
 ## Aus dem Quellcode bauen
 
